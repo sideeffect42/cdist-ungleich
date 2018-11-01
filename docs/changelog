@@ -5,6 +5,7 @@ next:
 	* Build: Overcome bash CDPATH when building docs (Dmitry Bogatov)
 	* Core: Add preos functionality (Darko Poljak)
 	* Core: Add trigger functionality (Nico Schottelius, Darko Poljak)
+	* Core: Implement core support for python types (Darko Poljak)
 
 5.1.2: 2019-06-21
 	* Core: Add support for type parameters deprecation (Darko Poljak)
