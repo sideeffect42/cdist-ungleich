@@ -19,4 +19,10 @@
 #
 
 gid="$("$__type_explorer/passwd" | cut -d':' -f 4)"
-getent group "$gid" || true
+
+if command -v getent
+then
+	getent group "$gid" || true
+else
+	grep "^[^:]*:[^:]*:$gid:" /etc/group || true
+fi

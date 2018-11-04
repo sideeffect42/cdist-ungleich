@@ -22,6 +22,22 @@ if [ -f "$__object/parameter/file" ]; then
    cat "$__object/parameter/file"
 else
    owner="$(cat "$__object/parameter/owner" 2>/dev/null || echo "$__object_id")"
-   home=$(getent passwd "$owner" | cut -d':' -f 6)
+
+   if command -v getent
+   then
+      owner_line=$(getent passwd "$owner")
+   else
+      case "$owner"
+      in
+         [0-9][0-9]*)
+            owner_line="$(grep "^[^:]*:[^:]*:$owner:" /etc/passwd)"
+            ;;
+         *)
+            owner_line="$(grep "^$owner" /etc/passwd)"
+            ;;
+      esac
+   fi
+
+   home="$(echo "$owner_line" | cut -d':' -f 6)"
    echo "$home/.ssh/authorized_keys"
 fi

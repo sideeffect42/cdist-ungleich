@@ -19,5 +19,12 @@
 #
 
 owner="$(cat "$__object/parameter/owner" 2>/dev/null || echo "$__object_id")"
-gid="$(getent passwd "$owner" | cut -d':' -f 4)"
-getent group "$gid" || true
+
+if command -v getent
+then
+	gid="$(getent passwd "$owner" | cut -d':' -f 4)"
+	getent group "$gid" || true
+else
+	gid="$(grep "^$owner:" /etc/passwd | cut -d':' -f 4)"
+	grep "^[^:]*:[^:]*:$gid:" /etc/group || true
+fi
