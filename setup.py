@@ -25,6 +25,7 @@ def data_finder(data_dir):
 
     return entries
 
+
 cur = os.getcwd()
 os.chdir("cdist")
 package_data = data_finder("conf")
@@ -35,7 +36,7 @@ setup(
     name="cdist",
     packages=["cdist", "cdist.core", "cdist.exec", "cdist.util", ],
     package_data={'cdist': package_data},
-    scripts=["scripts/cdist"],
+    scripts=["scripts/cdist", "scripts/cdist-dump"],
     version=cdist.version.VERSION,
     description="A Usable Configuration Management System",
     author="Nico Schottelius",

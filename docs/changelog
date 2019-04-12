@@ -2,6 +2,37 @@ Changelog
 ---------
 
 next:
+	* Core: Fix broken quiet mode (Darko Poljak)
+
+4.10.10: 2019-04-11
+	* New types: __ufw and __ufw_rule (Mark Polyakov)
+	* Type __link: Add messaging (Ander Punnar)
+	* Debugging: Rename debug-dump.sh to cdist-dump (Darko Poljak)
+	* Documentation: Add cdist-dump man page (Darko Poljak)
+
+4.10.9: 2019-04-09
+	* Type __ssh_authorized_keys: Properly handle multiple --option params (Steven Armstrong)
+	* Debugging: Add debug dump helper script (Darko Poljak)
+	* Type __file: Bugfix: fire onchange for present and exists states if no attribute is changed (Darko Poljak)
+
+4.10.8: 2019-04-06
+	* Type __clean_path: Fix list explorer exit code if path not directory or does not exist (Ander Punnar)
+	* New type: __check_messages (Ander Punnar)
+
+4.10.7: 2019-03-30
+	* Build: Migrate from pep8 to pycodestyle (Darko Poljak)
+	* Type __start_on_boot: Implement state absent for OpenBSD (Daniel Néri)
+	* Explorers cpu_cores, disks: Add support for OpenBSD (Daniel Néri)
+	* Type __staged_file: Use portable -p instead of --tmpdir for mktemp (Silas Silva)
+	* Type __line: Add onchange parameter (Ander Punnar)
+	* Type __file: Add onchange parameter (Ander Punnar)
+	* New type: __clean_path (Ander Punnar)
+
+4.10.6: 2019-02-15
+	* Type __prometheus_alertmanager: Add startup flag (Dominique Roux)
+	* Types __zypper_repo, __zypper_service: Re-add the use of echo in explorers (Daniel Heule)
+
+4.10.5: 2018-12-21
 	* Type __group: Fix/remove '--' from echo command (Dimitrios Apostolou)
 	* New type: __ping (Olliver Schinagl)
 	* Type __postgres_role: Fix broken syntax (Nico Schottelius, Darko Poljak)
@@ -9,6 +40,8 @@ next:
 	* Documentation: Fix broken links (Rage <OxR463>)
 	* Type __docker: Add version parameter (Jonas Weber)
 	* Type __sysctl: Refactor for better OS support (Takashi Yoshi)
+	* Types __package_*: Add messaging upon installation/removal (Takashi Yoshi)
+	* Type __package_pkg_openbsd: Reworked (Takashi Yoshi)
 
 4.10.4: 2018-11-03
 	* Core: Transfer all files of a directory at once instead of calling copy once per file (myeisha)
