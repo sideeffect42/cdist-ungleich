@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-# 2013 Nico Schottelius (nico-cdist at schottelius.org)
+# 2013-2019 Nico Schottelius (nico-cdist at schottelius.org)
 #
 # This file is part of cdist.
 #
@@ -36,6 +36,15 @@ charmap=$(echo "$locale" | cut -d . -f 2)
 locale_remove=$(echo "$locale" | sed 's/UTF-8/utf8/')
 
 state=$(cat "$__object/parameter/state")
+
+os=$(cat "$__global/explorer/os")
+
+# Nothing to be done on alpine
+case "$os" in
+    alpine)
+        exit 0
+        ;;
+esac
 
 case "$state" in
     present)

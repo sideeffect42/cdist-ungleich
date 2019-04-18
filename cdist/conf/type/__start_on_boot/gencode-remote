@@ -58,7 +58,7 @@ case "$state_should" in
                     echo "update-rc.d '$name' defaults >/dev/null"
                 ;;
 
-                gentoo)
+                alpine|gentoo)
                     echo "rc-update add '$name' '$target_runlevel'"
                 ;;
 
@@ -106,7 +106,7 @@ case "$state_should" in
                     echo "update-rc.d -f '$name' remove"
                 ;;
 
-                gentoo)
+                alpine|gentoo)
                     echo "rc-update del '$name' '$target_runlevel'"
                 ;;
 

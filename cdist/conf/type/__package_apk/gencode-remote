@@ -1,6 +1,5 @@
 #!/bin/sh -e
 #
-# 2012 Steven Armstrong (steven-cdist at armstrong.cc)
 # 2019 Nico Schottelius (nico-cdist at schottelius.org)
 #
 # This file is part of cdist.
@@ -19,18 +18,32 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# This type allows to configure the desired localtime timezone.
+# Manage packages on Debian and co.
+#
 
-timezone_is=$(cat "$__object/explorer/timezone_is")
-timezone_should="$__object_id"
-os=$(cat "$__global/explorer/os")
-
-if [ "$timezone_is" = "$timezone_should" ]; then
-    exit 0
+if [ -f "$__object/parameter/name" ]; then
+   name="$(cat "$__object/parameter/name")"
+else
+   name="$__object_id"
 fi
 
-case "$os" in
-   ubuntu|debian|devuan|coreos|alpine)
-      echo "echo \"$timezone_should\" > /etc/timezone"
-   ;;
+state_should="$(cat "$__object/parameter/state")"
+state_is="$(cat "$__object/explorer/state")"
+
+# Nothing to be done
+[ "$state_is" = "$state_should" ] && exit 0
+
+case "$state_should" in
+    present)
+        echo "apk add -q '$name'"
+        echo "installed" >> "$__messages_out"
+    ;;
+    absent)
+        echo "apk del -q '$name'"
+        echo "removed" >> "$__messages_out"
+    ;;
+    *)
+        echo "Unknown state: $state_should" >&2
+        exit 1
+    ;;
 esac

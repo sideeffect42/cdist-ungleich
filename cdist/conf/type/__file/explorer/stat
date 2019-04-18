@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 # 2013 Steven Armstrong (steven-cdist armstrong.cc)
+# 2019 Nico Schottelius (nico-cdist at schottelius.org)
 #
 # This file is part of cdist.
 #
@@ -25,25 +26,25 @@ destination="/$__object_id"
 
 os=$("$__explorer/os")
 case "$os" in
-   "freebsd"|"netbsd"|"openbsd")
-      # FIXME: should be something like this based on man page, but can not test
-      stat -f "type: %ST
-owner: %Du %Su
-group: %Dg %Sg
-mode: %Op %Sp
-size: %Dz
-links: %Dl
-" "$destination"
-   ;;
-   "macosx")
-     stat -f "type: %HT
+   "freebsd"|"netbsd"|"openbsd"|"macosx")
+      stat -f "type: %HT
 owner: %Du %Su
 group: %Dg %Sg
 mode: %Lp %Sp
 size: %Dz
 links: %Dl
+" "$destination" | awk '/^type/ { print tolower($0); next; } { print; }'
+      ;;
+   alpine)
+       # busybox stat
+      stat -c "type: %F
+owner: %u %U
+group: %g %G
+mode: %a %A
+size: %s
+links: %h
 " "$destination"
-   ;;
+      ;;
    *)
       stat --printf="type: %F
 owner: %u %U
@@ -52,5 +53,5 @@ mode: %a %A
 size: %s
 links: %h
 " "$destination"
-   ;;
+      ;;
 esac

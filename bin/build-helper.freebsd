@@ -230,9 +230,17 @@ eof
         then
             archivename="$3"
         else
-            archivename="cdist-${tag}.tar.gz"
+            archivename="cdist-${tag}.tar"
             git archive --prefix="cdist-${tag}/" -o "${archivename}" "${tag}" \
                 || exit 1
+            # make sure target version is generated
+            "$0" target-version
+            tar -x -f "${archivename}" || exit 1
+            cp cdist/version.py "cdist-${tag}/cdist/version.py" || exit 1
+            tar -c -f "${archivename}" "cdist-${tag}/" || exit 1
+            rm -r -f "cdist-${tag}/"
+            gzip "${archivename}" || exit 1
+            archivename="${archivename}.gz"
         fi
         gpg --armor --detach-sign "${archivename}" || exit 1
 
@@ -267,7 +275,7 @@ eof
             || exit 1
 
         # remove generated files (archive and asc)
-        if [ $# -eq 2]
+        if [ $# -eq 2 ]
         then
             rm -f "${archivename}"
         fi
