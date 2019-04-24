@@ -1,0 +1,82 @@
+#!/bin/sh -e
+# -*- mode: sh; indent-tabs-mode: t -*-
+#
+# 2019 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+
+os=$(cat "${__global}/explorer/os")
+state_should=$(cat "${__object}/parameter/state")
+
+config_file=$(cat "${__object}/explorer/config_file")
+if [ -s "${__object}/parameter/config_file" ] && [ -f "$(cat "${__object}/parameter/config_file")" ]
+then
+	config_file=$(cat "${__object}/parameter/config_file")
+fi
+
+if [ "${state_should}" != 'present' ] && [ "${state_should}" != 'absent' ]
+then
+	echo "Invalid state '${state_should}'." \
+		 "Only 'present' and 'absent' are acceptable" >&2
+	exit 1
+fi
+
+if [ "${state_should}" = 'present' ] && [ ! -f "${__object}/parameter/value" ]
+then
+	echo "Missing required parameter 'value'" >&2
+	exit 1
+fi
+
+# Parameters
+conf_name="${__object_id}"
+conf_value=$(cat "${__object}/parameter/value")
+conf_comment=''
+if [ -f "${__object}/parameter/comment" ]
+then
+	conf_comment=$(cat "${__object}/parameter/comment")
+fi
+
+case $os
+in
+	openbsd)
+		postgres_user='_postgresql'
+		while read -r line
+		do
+			onchange_cmd=$(printf '%s\n%s' "${onchange_cmd}" "${line}")
+		done <<EOF
+/etc/rc.d/postgresql reload
+new_value=\$(su - '${postgres_user}' -c "psql postgres -twAc \
+	\"SELECT current_setting('${conf_name}')\"")
+if [ '${conf_value}' != "\${new_value}" ]
+then
+	echo "Reloading didn't change setting '${conf_name}'." \
+	     ' Going to restart server...' >&2
+	/etc/rc.d/postgresql restart
+fi
+EOF
+		;;
+	*)
+		echo "Unsupported OS: ${os}" >&2
+		exit 1
+		;;
+esac
+
+
+# Update config
+__key_value "${conf_name}" --value "${conf_value}" --state "${state_should}" \
+	--comment "${conf_comment}" --file "${config_file}" \
+	--delimiter ' = ' --onchange "${onchange_cmd}"
