@@ -2,6 +2,22 @@ Changelog
 ---------
 
 next:
+	* Type __zypper_service: Fix spelling error in manpage (Dmitry Bogatov)
+	* Explorer init: Add support for OpenBSD (sideeffect42)
+	* Type __postgres_database: Run psql with -w (no-password) (sideeffect42)
+	* Type __postgres_role: Run psql with -w (no-password) (sideeffect42)
+	* Type __block: Quote prefix/suffix - fix when prefix/suffix contains quotes (sideeffect42)
+
+4.11.1: 2019-04-22
+	* Core: Improve explorer error reporting (Darko Poljak)
+	* Type __directory: explorer stat: add support for Solaris (Ander Punnar)
+	* Type __file: explorer stat: add support for Solaris (Ander Punnar)
+	* Type __ssh_authorized_keys: Remove legacy code (Ander Punnar)
+	* Explorer disks: Bugfix: do not break config in case of unsupported OS
+	  which was introduced in 4.11.0, print message to stderr and empty disk list
+	  to stdout instead (Darko Poljak)
+
+4.11.0: 2019-04-20
 	* Type __package: Add __package_apk support (Nico Schottelius)
 	* Type __directory: Add alpine support (Nico Schottelius)
 	* Type __file: Add alpine support (Nico Schottelius)
@@ -12,6 +28,10 @@ next:
 	* Type __start_on_boot: gentoo: check all runlevels in explorer (Nico Schottelius)
 	* New type: __package_apk (Nico Schottelius)
 	* Type __acl: Add support for ACL mask (Dimitrios Apostolou)
+	* Core: Fix circular dependency for CDIST_ORDER_DEPENDENCY (Darko Poljak)
+	* Type __acl: Improve the type (Ander Punnar)
+	* Explorer interfaces: Simplify code, be more compatible (Ander Punnar)
+	* Explorer disks: Remove assumable default/fallback, for now explicitly support only Linux and BSDs (Ander Punnar, Darko Poljak)
 
 4.10.11: 2019-04-13
 	* Core: Fix broken quiet mode (Darko Poljak)

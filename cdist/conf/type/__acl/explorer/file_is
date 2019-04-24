@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
 #
-# 2019 Nico Schottelius (nico-cdist at schottelius.org)
+# 2018 Ander Punnar (ander-at-kvlt-dot-ee)
 #
 # This file is part of cdist.
 #
@@ -17,18 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
-#
-# Retrieve the status of a package - parsed apk output
-#
 
-if [ -f "$__object/parameter/name" ]; then
-   name="$(cat "$__object/parameter/name")"
+if [ -e "/$__object_id" ]
+then
+    if [ -d "/$__object_id" ]
+    then echo directory
+    elif [ -f "/$__object_id" ]
+    then echo regular
+    else echo other
+    fi
 else
-   name="$__object_id"
-fi
-
-if [ "$(apk list -I "$name")" ]; then
-    echo present
-else
-    echo absent
+    echo missing
 fi
