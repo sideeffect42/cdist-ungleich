@@ -221,6 +221,10 @@ __cdist_log_level, __cdist_log_level_name
 
     Available for: initial manifest, explorer, type manifest, type explorer,
     type gencode.
+__cdist_dry_run
+    Is set only when doing dry run (``-n`` flag).
+    Available for: initial manifest, explorer, type manifest, type explorer,
+    type gencode.
 __explorer
     Directory that contains all global explorers.
     Available for: initial manifest, explorer, type explorer, shell.
@@ -323,6 +327,7 @@ CDIST_OVERRIDE
 
 CDIST_ORDER_DEPENDENCY
     Create dependencies based on the execution order (see  \`cdist manifest <cdist-manifest.html>\`_).
+    Read also about \`perils of CDIST_ORDER_DEPENDENCY <cdist-best-practice.html#perils-of-cdist-order-dependency>\`_.
 
 CDIST_REMOTE_EXEC
     Use this command for remote execution (should behave like ssh).

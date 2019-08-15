@@ -69,6 +69,7 @@ class CdistType(object):
         self.__optional_multiple_parameters = None
         self.__boolean_parameters = None
         self.__parameter_defaults = None
+        self.__deprecated_parameters = None
 
     def __hash__(self):
         return hash(self.name)
@@ -132,6 +133,17 @@ class CdistType(object):
         """Check whether a type is a non parallel, i.e. its objects
            cannot run in parallel."""
         return os.path.isfile(os.path.join(self.absolute_path, "nonparallel"))
+
+    @property
+    def deprecated(self):
+        """Get type deprecation message. If message is None then type
+        is not deprecated."""
+        deprecated_path = os.path.join(self.absolute_path, "deprecated")
+        try:
+            with open(deprecated_path, 'r') as f:
+                return f.read()
+        except FileNotFoundError:
+            return None
 
     @property
     def explorers(self):
@@ -264,3 +276,23 @@ class CdistType(object):
             finally:
                 self.__parameter_defaults = defaults
         return self.__parameter_defaults
+
+    @property
+    def deprecated_parameters(self):
+        if not self.__deprecated_parameters:
+            deprecated = {}
+            try:
+                deprecated_dir = os.path.join(self.absolute_path,
+                                              "parameter",
+                                              "deprecated")
+                for name in cdist.core.listdir(deprecated_dir):
+                    try:
+                        with open(os.path.join(deprecated_dir, name)) as fd:
+                            deprecated[name] = fd.read().strip()
+                    except EnvironmentError:
+                        pass  # Swallow errors raised by open() or read()
+            except EnvironmentError:
+                pass  # Swallow error raised by os.listdir()
+            finally:
+                self.__deprecated_parameters = deprecated
+        return self.__deprecated_parameters

@@ -2,11 +2,52 @@ Changelog
 ---------
 
 next:
+	* Build: Overcome bash CDPATH when building docs (Dmitry Bogatov)
+	* Type __grafana_dashboard: Update distribution name, package signing key URI and repository URI (Dominique Roux)
+	* Type __docker: Add devuan support (Dominique Roux)
+
+5.1.2: 2019-06-21
+	* Core: Add support for type parameters deprecation (Darko Poljak)
+	* Type __acl: Rewrite and improve (Ander Punnar)
+
+5.1.1: 2019-05-28
+	* Type __apt_key: Use gpg key, fallback to deprecated apt-key (Ander Punnar)
+	* Type __acl: Fix and improve (Ander Punnar)
+	* Documentation: Document type stdin inside loop caveats (Darko Poljak)
+
+5.1.0: 2019-05-22
+	* Type __consul: Add alpine support (Nico Schottelius)
+	* Type __consul: Add version 1.5.0 (Nico Schottelius)
+	* Type __consul_agent: Add alpine support (Nico Schottelius)
+	* New helper script: cdist-new-type (Steven Armstrong, Darko Poljak)
+	* Core: Add support for deprecated type marker (Darko Poljak)
+
+5.0.2: 2019-05-17
+	* Type __package_apk: Fix @repo handling in explorer (Nico Schottelius)
+	* Type __postfix: Add alpine support (Nico Schottelius)
+	* Type __postfix_postconf: Add alpine support (Nico Schottelius)
+	* Type __user: Add alpine support (Nico Schottelius)
+	* Core: Set __cdist_dry_run env var (Ander Punnar)
+
+5.0.1: 2019-05-09
+	* Documentation: Add 'Perils of CDIST_ORDER_DEPENDENCY' sub-section (Darko Poljak)
+	* Build: Clean and separate end user targets into Makefile and maintainer targets into build-helper (Darko Poljak)
+	* Core: Update residual references to old cdist homepage (Darko Poljak)
+	* Documentation: Update residual references to old cdist homepage and git source (Darko Poljak)
+	* Type __cdist: Fix non working 'git://' protocol source (Darko Poljak)
+
+5.0.0: 2019-05-05
 	* Type __zypper_service: Fix spelling error in manpage (Dmitry Bogatov)
 	* Explorer init: Add support for OpenBSD (sideeffect42)
 	* Type __postgres_database: Run psql with -w (no-password) (sideeffect42)
 	* Type __postgres_role: Run psql with -w (no-password) (sideeffect42)
 	* Type __block: Quote prefix/suffix - fix when prefix/suffix contains quotes (sideeffect42)
+	* Build: Update due to migration to code.ungleich.ch (Darko Poljak)
+	* Documentation: Update due to migration to code.ungleich.ch (Darko Poljak)
+	* Core: Detect and report dependency cycle as soon as possible (Darko Poljak)
+	* Core, documentation: Release -j/--jobs option, i.e. make it non-beta (Darko Poljak)
+	* Documentation: Update due to new cdist website (Darko Poljak)
+	* Build: Update due to new cdist website (Darko Poljak)
 
 4.11.1: 2019-04-22
 	* Core: Improve explorer error reporting (Darko Poljak)
