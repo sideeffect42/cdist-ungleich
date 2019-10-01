@@ -23,7 +23,7 @@ os=$(cat "${__global}/explorer/os")
 state_should=$(cat "${__object}/parameter/state")
 
 config_file=$(cat "${__object}/explorer/config_file")
-if [ -s "${__object}/parameter/config_file" ] && [ -f "$(cat "${__object}/parameter/config_file")" ]
+if [ -s "${__object}/parameter/config_file" ]
 then
 	config_file=$(cat "${__object}/parameter/config_file")
 fi
@@ -31,13 +31,13 @@ fi
 if [ "${state_should}" != 'present' ] && [ "${state_should}" != 'absent' ]
 then
 	echo "Invalid state '${state_should}'." \
-		 "Only 'present' and 'absent' are acceptable" >&2
+	     'Only "present" and "absent" are acceptable' >&2
 	exit 1
 fi
 
 if [ "${state_should}" = 'present' ] && [ ! -f "${__object}/parameter/value" ]
 then
-	echo "Missing required parameter 'value'" >&2
+	echo 'Missing required parameter "value"' >&2
 	exit 1
 fi
 
