@@ -27,11 +27,12 @@ case "$os" in
     "macosx")
         sysctl -n hw.physicalcpu
     ;;
-
     "openbsd")
         sysctl -n hw.ncpuonline
     ;;
-
+    haiku)
+        nproc
+    ;;
     *)
         if [ -r /proc/cpuinfo ]; then
             cores="$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)"
