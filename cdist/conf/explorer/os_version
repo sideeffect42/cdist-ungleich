@@ -22,7 +22,7 @@
 #
 #
 
-case "$("$__explorer/os")" in
+case $("$__explorer/os") in
    amazon)
       cat /etc/system-release
    ;;
@@ -45,7 +45,7 @@ case "$("$__explorer/os")" in
    macosx)
       sw_vers -productVersion
    ;;
-   *bsd|solaris)
+   *bsd|solaris|haiku)
       uname -r
    ;;
    openwrt)
