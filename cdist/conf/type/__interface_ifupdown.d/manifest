@@ -1,0 +1,126 @@
+#!/bin/sh -e
+#
+# 2020 Dennis Camera (dennis.camera@ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+
+INTERFACES_FILE=/etc/network/interfaces
+INTERFACES_D_PATH=/etc/network/interfaces.d
+
+os=$(cat "$__global/explorer/os")
+
+state=$(cat "${__object}/parameter/state")
+
+case $os
+in
+	debian)
+		os_major=$(grep -o '^[0-9][0-9]*' "${__global}/explorer/os_version")
+		if test "${os_major}" -lt 7
+		then
+			# Old versions do not support "source"
+			printf 'Debian versions older than 7 (wheezy) are not supported by this type (%s)\n' "${__type##*/}" >&2
+			exit 1
+		fi
+
+		if test "${state}" = 'present'
+		then
+			__package ifupdown --state present
+			export require=__package/ifupdown
+		fi
+		;;
+	devuan)
+		if test "${state}" = 'present'
+		then
+			__package ifupdown --state present
+			export require=__package/ifupdown
+		fi
+		;;
+	*)
+		printf 'Your operating system (%s) is currently not supported by this type (%s)\n' "$os" "${__type##*/}" >&2
+		printf "Please contribute an implementation for it if you can.\n" >&2
+		exit 1
+		;;
+esac
+
+
+name=$(test -s "${__object}/parameter/name" && cat "${__object}/parameter/name" || echo "${__object_id}")
+addrfam=$(cat "${__object}/parameter/family")
+method=$(cat "${__object}/parameter/method")
+
+options=$(test -s "${__object}/parameter/option" && cat "${__object}/parameter/option" || true)
+
+file_path="${INTERFACES_D_PATH}/${name}"
+
+
+if test "${state}" = 'present'
+then
+	# If state is present, ensure that the interfaces.d directory is sourced in
+	# the main interfaces file
+	__line "${INTERFACES_FILE}:source_interfaces.d" --state present \
+		--file "${INTERFACES_FILE}" \
+		--before '^#?[:blank:]*(auto|no-auto-down|no-scripts|allow-|iface|mapping|rename|source|source-directory)|^#[[:blank:]]*The .* interface$' \
+		--line "source ${INTERFACES_D_PATH}/*"
+
+	# FIXME: State should be --pre-exists...
+	__directory "${INTERFACES_D_PATH}" --owner root --mode 0644 --state present
+
+	# NOTE: No file ending is used not to break the source-directory stanza (if
+	#       used and at least for normal interface names)
+	# FIXME: The file will be left there when --state absent. It should be
+	#        deleted if empty (could be non-empty if user has manual
+	#        configuration)
+	require=__directory/"${INTERFACES_D_PATH}"
+	__file "${file_path}" --state exists --owner root --mode 0644
+	export require="__file/${file_path}"
+fi
+
+
+# Put together the "allow" lines (these are the line(s) usually preceeding the
+# iface line in the config)
+allow=''
+if ! test -f "${__object}/parameter/no-auto"
+then
+	allow="${allow}auto ${name}
+"
+fi
+if test -f "${__object}/parameter/hotplug"
+then
+	allow="${allow}allow-hotplug ${name}
+"
+fi
+if test -f "${__object}/parameter/no-auto-down"
+then
+	allow="${allow}no-auto-down ${name}
+"
+fi
+if test -f "${__object}/parameter/no-scripts"
+then
+	allow="${allow}no-scripts ${name}
+"
+fi
+
+
+# Construct file
+
+__block "${__object_id}" --state "${state}" \
+	--file "${file_path}" \
+	--prefix "#cdist:${__type##*/}/${__object_id}" \
+	--suffix "#/cdist:${__type##*/}/${__object_id}" \
+	--text - <<EOF
+${allow}iface ${name} ${addrfam} ${method}
+$(echo "$options" | while read -r opt ; do printf '\t%s %s\n' "${opt%%=*}" "${opt#*=}" ; done)
+EOF
