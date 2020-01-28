@@ -111,6 +111,13 @@ in
             set_hostname_systemd "$name_should"
         fi
     ;;
+    crux)
+        __key_value sysconfig-hostname \
+            --file /etc/rc.conf \
+            --delimiter '=' --exact_delimiter \
+            --key 'HOSTNAME' \
+            --value "\"$name_should\""
+    ;;
     gentoo)
         # Only write to /etc/conf.d/hostname on OpenRC-based installations.
         # On systemd use hostnamectl(1) in gencode-remote.
