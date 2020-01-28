@@ -35,6 +35,11 @@ if [ -f /etc/arch-release ]; then
    exit 0
 fi
 
+if [ -f /etc/adelie-release ]; then
+   echo adelie
+   exit 0
+fi
+
 if [ -f /etc/cdist-preos ]; then
    echo cdist-preos
    exit 0

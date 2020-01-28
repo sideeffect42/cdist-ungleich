@@ -22,7 +22,10 @@
 #
 #
 
-case "$("$__explorer/os")" in
+case $("$__explorer/os") in
+   adelie)
+      awk -F= '$1 == "VERSION_ID" { if ($2 ~ /^'"'"'(.*)'"'"'$/ || $2 ~ /^"(.*)"$/) { print substr($2, 2, length($2) - 2) } else { print $2 } }' /etc/os-release
+   ;;
    amazon)
       cat /etc/system-release
    ;;
