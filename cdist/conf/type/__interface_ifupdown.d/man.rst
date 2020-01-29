@@ -17,17 +17,70 @@ NOTE: Only interfaces declared by cdist are removed when using --state absent.
 
 REQUIRED PARAMETERS
 -------------------
-None.
+family
+   The name of the address family that the interface uses.
+   Available options are: 'inet', 'ipx', 'inet6', 'can'.
+method
+   The name of the method used to configure the interface.
+   Available options depend on the address family and are, for
+   inet:
+      'loopback', 'static', 'manual', 'dhcp', 'bootp', 'tunnel', 'ppp',
+      'wvdial', and 'ip4ll'.
+   ipx:
+      'static', and 'dynamic'.
+   inet6:
+      'auto', 'loopback', 'static', 'manual', 'dhcp', 'v4tunnel', '6to4'.
+   can:
+      'static'.
 
 
 OPTIONAL PARAMETERS
 -------------------
-None.
+name
+   The name of the logical interface to configure (usually equivalent to the
+   physical interface).
+   Defaults to __object_id.
+comment
+   If supplied, the value will be inserted at the top of the configuration file
+   as a comment.
+   If comment is '-', what was written to stdin is used as the comment.
+rename
+   If supplied, the given interface renaming spefication will be added to the
+   config file.
+   This option can e.g. be used to generate predictable interface names based on
+   the interface's MAC address.
+state
+   Either present or absent. Defaults to present.
+option
+   Additional option that is added to the generated interface configuration
+   verbatim.
+onchange
+   The action to perform if the interface configuration has changed.
+   Available options are:
+   leave (default)
+     Do nothing.
+   up
+     Bring the interface up if it is down.
+   down
+     Bring the interface down if it is up.
+   refresh
+     Refresh the interface (down && up).
 
 
 BOOLEAN PARAMETERS
 ------------------
-None.
+auto
+   If supplied, the interface will be marked "auto" and brought up during boot.
+hotplug
+   Allow hotplug support for this interface.
+   The interface will be brought up when udev detects it, this can be during
+   boot or later.
+no-auto-down
+   If supplied, the interface will not be brought down by the command
+   "ifdown -a".
+no-scripts
+   If supplied, scripts in '/etc/network/if-*.d/' will not be run when this
+   interface is brought up or down.
 
 
 EXAMPLES
@@ -35,13 +88,17 @@ EXAMPLES
 
 .. code-block:: sh
 
-    # TODO
-    __interface_ifupdown.d
+    # Configure interface eth0 to use DHCP.
+    __interface_ifupdown.d eth0 --family inet --method dhcp
+
+    # Rename interface with MAC 00:11:22:33:44:55 to eth1 and use DHCP.
+    __interface_ifupdown.d eth1 --rename mac/00:11:22:33:44:55=eth1 \
+        --family inet --method dhcp
 
 
 SEE ALSO
 --------
-:strong:`TODO`\ (7)
+:strong:`interfaces`\ (5)
 
 
 AUTHORS

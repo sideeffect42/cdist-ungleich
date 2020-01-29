@@ -21,9 +21,34 @@
 INTERFACES_FILE=/etc/network/interfaces
 INTERFACES_D_PATH=/etc/network/interfaces.d
 
-os=$(cat "$__global/explorer/os")
+os=$(cat "${__global}/explorer/os")
 
+name=$(test -s "${__object}/parameter/name" && cat "${__object}/parameter/name" || echo "${__object_id}")
 state=$(cat "${__object}/parameter/state")
+
+
+onchange_action() {
+	case $(cat "${__object}/parameter/onchange")
+	in
+		refresh)
+			printf "ifdown --force '%s' ; ifup '%s'\n" "${name}" "${name}"
+			;;
+		up)
+			printf "ifup '%s'\n" "${name}"
+			;;
+		down)
+			printf "ifdown --force '%s'\n" "${name}"
+			;;
+		leave)
+			:  # ignore
+			;;
+		*)
+			printf 'Invalid option "%s" for --onchange!' "$(cat "${__object}/parameter/onchange")" >&2
+			exit 1
+			;;
+	esac
+}
+
 
 case $os
 in
@@ -57,70 +82,89 @@ in
 esac
 
 
-name=$(test -s "${__object}/parameter/name" && cat "${__object}/parameter/name" || echo "${__object_id}")
-addrfam=$(cat "${__object}/parameter/family")
-method=$(cat "${__object}/parameter/method")
-
-options=$(test -s "${__object}/parameter/option" && cat "${__object}/parameter/option" || true)
-
-file_path="${INTERFACES_D_PATH}/${name}"
-
-
 if test "${state}" = 'present'
 then
-	# If state is present, ensure that the interfaces.d directory is sourced in
-	# the main interfaces file
-	__line "${INTERFACES_FILE}:source_interfaces.d" --state present \
-		--file "${INTERFACES_FILE}" \
-		--before '^#?[:blank:]*(auto|no-auto-down|no-scripts|allow-|iface|mapping|rename|source|source-directory)|^#[[:blank:]]*The .* interface$' \
-		--line "source ${INTERFACES_D_PATH}/*"
+	if test "${IFUPDOWND_LEAVE_EXISTING_CONFIG:-0}" -eq 0
+	then
+		# The /etc/network/interfaces file is overwritten with a basic example.
+		__file "${INTERFACES_FILE}" --state present --owner root --mode 0644 \
+			--source "${__type}/files/interfaces"
+	else
+		# If state is present and IFUPDOWND_LEAVE_EXISTING_CONFIG is set,
+		# ensure that the interfaces.d directory is sourced in the main
+		# interfaces file, being as minimally invasive as possible.
+		__line "${INTERFACES_FILE}:source_interfaces.d" --state present \
+			--file "${INTERFACES_FILE}" \
+			--before '^#?[:blank:]*(auto|no-auto-down|no-scripts|allow-|iface|mapping|rename|source|source-directory)|^#[[:blank:]]*The .* interface$' \
+			--line "source ${INTERFACES_D_PATH}/*"
+	fi
 
 	# FIXME: State should be --pre-exists...
-	__directory "${INTERFACES_D_PATH}" --owner root --mode 0644 --state present
-
-	# NOTE: No file ending is used not to break the source-directory stanza (if
-	#       used and at least for normal interface names)
-	# FIXME: The file will be left there when --state absent. It should be
-	#        deleted if empty (could be non-empty if user has manual
-	#        configuration)
-	require=__directory/"${INTERFACES_D_PATH}"
-	__file "${file_path}" --state exists --owner root --mode 0644
-	export require="__file/${file_path}"
+	__directory "${INTERFACES_D_PATH}" --owner root --mode 0755 --state present
+	export require="__directory/${INTERFACES_D_PATH}"
 fi
 
 
-# Put together the "allow" lines (these are the line(s) usually preceeding the
-# iface line in the config)
-allow=''
-if ! test -f "${__object}/parameter/no-auto"
-then
-	allow="${allow}auto ${name}
-"
-fi
-if test -f "${__object}/parameter/hotplug"
-then
-	allow="${allow}allow-hotplug ${name}
-"
-fi
-if test -f "${__object}/parameter/no-auto-down"
-then
-	allow="${allow}no-auto-down ${name}
-"
-fi
-if test -f "${__object}/parameter/no-scripts"
-then
-	allow="${allow}no-scripts ${name}
-"
-fi
+# Construct interface config file
 
+(
+	cat <<-EOF
+	# Managed by cdist (${__type##*/})
+	# Do not change. Changes will be overwritten.
 
-# Construct file
+	EOF
 
-__block "${__object_id}" --state "${state}" \
-	--file "${file_path}" \
-	--prefix "#cdist:${__type##*/}/${__object_id}" \
-	--suffix "#/cdist:${__type##*/}/${__object_id}" \
-	--text - <<EOF
-${allow}iface ${name} ${addrfam} ${method}
-$(echo "$options" | while read -r opt ; do printf '\t%s %s\n' "${opt%%=*}" "${opt#*=}" ; done)
-EOF
+	if test -f "${__object}/parameter/comment"
+	then
+		# Prefix lines with # and append trailing empty line.
+
+		comment_file="${__object}/parameter/comment"
+		if test "$(cat "${comment_file}")" = '-'
+		then
+			comment_file="${__object}/stdin"
+		fi
+
+		# shellcheck disable=SC2016
+		sed -e 's/^/# /;$G' "${comment_file}"
+		unset comment_file
+	fi
+
+	# Put together rename line
+	if test -s "${__object}/parameter/rename"
+	then
+		printf 'rename %s\n' "$(cat "${__object}/parameter/rename")"
+	fi
+
+	# Put together the "allow" lines (these are the line(s) usually preceeding
+	# the iface line in the config).
+	if test -f "${__object}/parameter/onboot"
+	then
+		printf 'auto %s\n' "$name"
+	fi
+	if test -f "${__object}/parameter/hotplug"
+	then
+		printf 'allow-hotplug %s\n' "$name"
+	fi
+	if test -f "${__object}/parameter/no-auto-down"
+	then
+		printf 'no-auto-down %s\n' "$name"
+	fi
+	if test -f "${__object}/parameter/no-scripts"
+	then
+		printf 'no-scripts %s\n' "$name"
+	fi
+
+	addrfam=$(cat "${__object}/parameter/family")
+	method=$(cat "${__object}/parameter/method")
+	printf 'iface %s %s %s\n' "$name" "$addrfam" "$method"
+
+	while read -r opt
+	do
+		printf '\t%s\n' "$opt"
+	done <"${__object}/parameter/option"
+) | \
+# NOTE: No file ending is used not to break the source-directory stanza (if
+#       used and at least for normal interface names)
+__file "${INTERFACES_D_PATH}/${__object_id}" --state "$state" \
+	--owner root --mode 0644 --source - \
+	--onchange "$(onchange_action)"
