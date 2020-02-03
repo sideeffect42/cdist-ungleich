@@ -30,6 +30,9 @@ case "$("$__explorer/os")" in
       # empty, but well...
       cat /etc/arch-release
    ;;
+   crux)
+      crux | sed -e 's/^.*version //'
+   ;;
    debian)
       cat /etc/debian_version
    ;;
