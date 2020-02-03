@@ -74,4 +74,6 @@ case "$("$__explorer/os")" in
    ubuntu)
       lsb_release -sr
    ;;
+   *)
+      [ -f /etc/os-release ] && consult_os_release_file
 esac
