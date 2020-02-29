@@ -72,6 +72,13 @@ if [ -r /proc/cpuinfo ]; then
             fi                        
         fi
         echo "virtual_by_unknown"
+    elif [ "$(uname -s)" = NetBSD ]; then
+        if [ "$(/sbin/sysctl -n machdep.dmi.system-vendor)" = 'QEMU' ]
+        then
+            echo "virtual_by_qemu"
+        else
+            echo "physical"
+        fi
     else
         echo "physical"
     fi
