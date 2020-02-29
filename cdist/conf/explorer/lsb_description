@@ -26,7 +26,7 @@ case "$("$__explorer/os")" in
       (. /etc/openwrt_release && echo "$DISTRIB_DESCRIPTION")
    ;;
    *)
-      lsb_release=$(command -v lsb_release)
+      lsb_release=$(command -v lsb_release 2>/dev/null)
       if [ -x "$lsb_release" ]; then
          $lsb_release --short --description
       fi
