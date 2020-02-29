@@ -23,8 +23,8 @@
 # FIXME: other system types (not linux ...)
 
 os=$("$__explorer/os")
-case "$os" in
-    "macosx")
+case $os in
+    macosx)
         sysctl -n hw.physicalcpu
     ;;
 
@@ -34,9 +34,9 @@ case "$os" in
 
     *)
         if [ -r /proc/cpuinfo ]; then
-            cores="$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)"
+            cores=$(grep 'core id' /proc/cpuinfo | sort -u | wc -l)
             if [ "${cores}" -eq 0 ]; then
-                cores="1"
+                cores=1
             fi
             echo "$cores"
         fi
