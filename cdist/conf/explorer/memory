@@ -1,8 +1,9 @@
-#!/bin/sh
+#!/bin/sh -e
 #
 # 2014 Daniel Heule  (hda at sfs.biz)
 # 2014 Thomas Oettli (otho at sfs.biz)
 # Copyright 2017, Philippe Gregoire <pg@pgregoire.xyz>
+# 2020 Dennis Camera <dennis.camera at ssrq-sds-fds.ch>
 #
 # This file is part of cdist.
 #
@@ -19,23 +20,42 @@
 # You should have received a copy of the GNU General Public License
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
-#
+# Returns the amount of memory available to the system in kibibytes (kiB).
 
-# FIXME: other system types (not linux ...)
+str2bytes() {
+	awk -F' ' \
+	'!$2 || $2 == "B" { print $1 }
+	 $2 ==  "kB" { print $1 * 1000 }
+	 $2 ==  "MB" { print $1 * 1000 * 1000 }
+	 $2 ==  "GB" { print $1 * 1000 * 1000 * 1000 }
+	 $2 ==  "TB" { print $1 * 1000 * 1000 * 1000 * 1000 }
+	 $2 == "kiB" { print $1 * 1024 }
+	 $2 == "MiB" { print $1 * 1024 * 1024 }
+	 $2 == "GiB" { print $1 * 1024 * 1024 * 1024 }
+	 $2 == "TiB" { print $1 * 1024 * 1024 * 1024 * 1024 }'
+}
 
-os=$("$__explorer/os")
-case "$os" in
-    "macosx")
-        echo "$(sysctl -n hw.memsize)/1024" | bc
-    ;;
+bytes2kib() {
+	set -- "$(cat)"
+	test "$1" -gt 0 && echo $(($1 / 1024))
+}
 
-    "openbsd")
-        echo "$(sysctl -n hw.physmem) / 1048576" | bc
-    ;;
 
-    *)
-    if [ -r /proc/meminfo ]; then
-        grep "MemTotal:" /proc/meminfo | awk '{print $2}'
-    fi
-    ;;
+case $(uname -s)
+in
+	Darwin)
+		sysctl -n hw.memsize | bytes2kib
+		;;
+	FreeBSD|NetBSD|OpenBSD)
+		PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
+		sysctl -n hw.physmem | bytes2kib
+		;;
+	*)
+		if test -r /proc/meminfo
+		then
+			awk -F ': +' '$1 == "MemTotal" { sub(/B$/, "iB", $2); print $2 }' /proc/meminfo \
+			 | str2bytes \
+			 | bytes2kib
+		fi
+		;;
 esac
