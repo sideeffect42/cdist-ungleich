@@ -19,7 +19,13 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-if [ -f "$__object/parameter/file" ]; then
+no_such_user() {
+	echo 'There is no user "%s" on the target!\n' "$1" >&2
+	exit 1
+}
+
+if [ -f "$__object/parameter/file" ]
+then
 	cat "$__object/parameter/file"
 else
 	if [ -s "$__object/parameter/owner" ]
@@ -31,7 +37,7 @@ else
 
 	if command -v getent >/dev/null
 	then
-		owner_line=$(getent passwd "$owner")
+		owner_line=$(getent passwd "$owner") || no_such_user "$owner"
 	elif [ -f /etc/passwd ]
 	then
 		case $owner
@@ -45,7 +51,7 @@ else
 		esac
 	fi
 
-	if [ "$owner_line" ]
+	if [ -n "$owner_line" ]
 	then
 		home=$(echo "$owner_line" | cut -d':' -f6)
 	fi
@@ -53,9 +59,13 @@ else
 	if [ ! -d "$home" ]
 	then
 		# Don't know how to determine user's home directory, fall back to ~
-		home="~$owner"
-		command -v realpath >/dev/null && home=$(realpath "$home")
+		home=$(cd ~"$owner" 2>/dev/null && pwd -P)
 	fi
 
-	[ -d "$home" ] && echo "$home/.ssh/authorized_keys"
+	if [ ! -d "$home" ]
+	then
+		no_such_user "$owner"
+	fi
+
+	echo "$home/.ssh/authorized_keys"
 fi
