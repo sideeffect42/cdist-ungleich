@@ -50,6 +50,14 @@ in
 		PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
 		sysctl -n hw.physmem | bytes2kib
 		;;
+	SunOS)
+		# Make sure that awk from xpg4 is used for the scripts to work
+		export PATH="/usr/xpg4/bin:${PATH}"
+		prtconf \
+		 | awk -F ': ' '$1 == "Memory size" { sub(/Megabytes/, "MiB", $2); print $2 } /^$/ { exit }' \
+		 | str2bytes \
+		 | bytes2kib
+		;;
 	*)
 		if test -r /proc/meminfo
 		then
