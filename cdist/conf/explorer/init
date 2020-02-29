@@ -95,6 +95,7 @@ procd
 smf
 launchd
 init
+shepherd
 hurd_init
 systemstarter
 EOF
@@ -175,6 +176,8 @@ check_init() {
 		echo init
 		return 0
 	fi
+
+	return 1
 }
 
 check_launchd() {
@@ -198,6 +201,11 @@ check_procd() (
 check_runit() {
 	test -d /run/runit || return 1
 	echo runit
+}
+
+check_shepherd() {
+	test -S /var/run/shepherd/socket || return 1
+	echo shepherd
 }
 
 check_smf() {
