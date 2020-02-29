@@ -17,12 +17,32 @@
 # You should have received a copy of the GNU General Public License
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
+# Returns a sorted list of all network interfaces known to the system (one per line)
 
-if command -v ip >/dev/null
-then
-	ip -o link show | sed -n 's/^[0-9]\+: \(.\+\): <.*/\1/p'
-elif command -v ifconfig >/dev/null
-then
-	ifconfig -a | sed -n -E 's/^(.*)(:[[:space:]]*flags=|Link encap).*/\1/p'
-fi \
+
+case $(uname -s)
+in
+	FreeBSD|OpenBSD)
+		ifconfig -a | sed -e '/^[a-z0-9]*:/!d' -e 's/:.*$//'
+		;;
+	NetBSD)
+		PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
+		sysctl -e net.interfaces. | cut -d= -f1 | cut -d. -f3
+		;;
+	SunOS)
+		# Note: Solaris' ifconfig duplicates interfaces (once for IPv4, once for IPv6)
+		ifconfig -a | sed -e '/^[a-z0-9]*:/!d' -e 's/:.*$//'
+		# Alternative: Use dladm, which ignores lo, though.
+		# dladm show-link -po link
+		;;
+	*)
+		if command -v ip >/dev/null 2>&1
+		then
+			ip -o link show | sed -n 's/^[0-9]\+: \(.\+\): <.*/\1/p'
+		elif command -v ifconfig >/dev/null 2>&1
+		then
+			ifconfig -a | sed -n -r 's/^(.*)(:[[:space:]]*flags=|Link encap).*/\1/p'
+		fi
+		;;
+esac \
  | sort -u
