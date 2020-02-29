@@ -50,6 +50,10 @@ in
 		PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
 		sysctl -n hw.physmem | bytes2kib
 		;;
+	Haiku)
+		sysinfo -mem | grep -o -e '(used/max .*)' | grep -o -e '[1-9][0-9]*' | tail -1 \
+		 | bytes2kib
+		;;
 	SunOS)
 		# Make sure that awk from xpg4 is used for the scripts to work
 		export PATH="/usr/xpg4/bin:${PATH}"
