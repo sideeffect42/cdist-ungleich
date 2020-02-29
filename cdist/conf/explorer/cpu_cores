@@ -28,8 +28,9 @@ case $os in
         sysctl -n hw.physicalcpu
     ;;
 
-    "openbsd")
-        sysctl -n hw.ncpuonline
+    freebsd|netbsd|openbsd)
+        PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
+        sysctl -n hw.ncpu
     ;;
 
     *)
