@@ -18,8 +18,12 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
+in_list() { printf '%s\n' "$@" | { grep -qxF "$(read -r NDL; echo "$NDL")"; } }
 
 os=$(cat "$__global/explorer/os")
+
+state_is=$(cat "${__object}/explorer/state")
+state_should=$(cat "${__object}/parameter/state")
 
 case $os
 in
@@ -33,6 +37,25 @@ in
 		;;
 esac
 
+needs_changes=false
+case $state_should
+in
+	(present)
+		# NOTE: order is ignored so rearranged is also fine.
+		in_list "${state_is}" 'present' 'rearranged' || needs_changes=true
+		;;
+	(absent)
+		in_list "${state_is}" 'absent' || needs_changes=true
+		;;
+	(*)
+		printf 'Invalid --state: %s\n' "${state_should}" >&2
+		exit 1
+		;;
+esac
 
-# Make sure the changes are being commited
-require=$__object_name __uci_commit "$(cat "${__object}/parameter/transaction")"
+if $needs_changes
+then
+	# Make sure the changes are being commited
+	require=$__object_name \
+	__uci_commit "$(cat "${__object}/parameter/transaction")"
+fi
