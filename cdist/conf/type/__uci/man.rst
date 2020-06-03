@@ -28,8 +28,6 @@ value
 
 OPTIONAL PARAMETERS
 -------------------
-list-mode
-    `replace` or `modify`, defaults to `replace`.
 state
     `present` or `absent`, defaults to `present`.
 transaction
