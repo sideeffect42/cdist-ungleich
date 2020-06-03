@@ -34,7 +34,7 @@
 option=$__object_id
 
 RS=$(printf '\036')
-values_is=$(uci -s -N -d $RS get "${option}" 2>/dev/null) \
+values_is=$(uci -s -N -d "$RS" get "${option}" 2>/dev/null) \
 || echo absent
 
 # strip off trailing newline
@@ -83,4 +83,4 @@ END {
 
 	print state
 }
-' "${__object}/parameter/value" RS=$RS -
+' "${__object}/parameter/value" RS="$RS" -
