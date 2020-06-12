@@ -18,17 +18,17 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-in_list() { printf '%s\n' "$@" | { grep -qxF "$(read -r NDL; echo "$NDL")"; } }
-
 os=$(cat "$__global/explorer/os")
 
 state_is=$(cat "${__object}/explorer/state")
 state_should=$(cat "${__object}/parameter/state")
 
+transaction_name=$(cat "${__object}/parameter/transaction")
+
 case $os
 in
 	(openwrt)
-		:
+		:  # okay
 		;;
 	(*)
 		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "$os" "${__type##*/}" >&2
@@ -37,21 +37,16 @@ in
 		;;
 esac
 
-needs_changes=false
-
 case $state_should
 in
 	(present)
-		# NOTE: order is ignored so rearranged is also fine.
-		in_list "${state_is}" 'present' 'rearranged' || needs_changes=true
-
 		test -s "${__object}/parameter/value" || {
 			echo 'The parameter --value is required.' >&2
 			exit 1
 		}
 		;;
 	(absent)
-		in_list "${state_is}" 'absent' || needs_changes=true
+		:
 		;;
 	(*)
 		printf 'Invalid --state: %s\n' "${state_should}" >&2
@@ -59,9 +54,5 @@ in
 		;;
 esac
 
-if $needs_changes
-then
-	# Make sure the changes are being commited
-	require=$__object_name \
-	__uci_commit "$(cat "${__object}/parameter/transaction")"
-fi
+# Make sure the changes are being commited.
+require=$__object_name __uci_commit "${transaction_name}"
