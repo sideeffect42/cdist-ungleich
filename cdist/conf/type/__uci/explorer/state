@@ -31,11 +31,14 @@
 #     The configuration option is present (a list) and has the same values as
 #     the parameter --value, but in a different order.
 
+RS=$(printf '\036')
+
 option=$__object_id
 
-RS=$(printf '\036')
-values_is=$(uci -s -N -d "$RS" get "${option}" 2>/dev/null) \
-|| echo absent
+values_is=$(uci -s -N -d "${RS}" get "${option}" 2>/dev/null) || {
+	echo absent
+	exit 0
+}
 
 if test -f "${__object}/parameter/value"
 then
