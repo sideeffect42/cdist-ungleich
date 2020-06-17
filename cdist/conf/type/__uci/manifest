@@ -20,7 +20,6 @@
 
 os=$(cat "$__global/explorer/os")
 
-state_is=$(cat "${__object}/explorer/state")
 state_should=$(cat "${__object}/parameter/state")
 
 transaction_name=$(cat "${__object}/parameter/transaction")
