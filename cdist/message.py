@@ -19,6 +19,7 @@
 #
 #
 
+import fcntl
 import logging
 import os
 import shutil
@@ -54,7 +55,13 @@ class Message(object):
 
     def _copy_messages(self):
         """Copy global contents into our copy"""
-        shutil.copyfile(self.global_messages, self.messages_in)
+        with open(self.global_messages, 'r+') as fmsg_global:
+            try:
+                fcntl.lockf(fmsg_global, fcntl.LOCK_EX)
+                with open(self.messages_in, 'w') as fmsg_local:
+                    shutil.copyfileobj(fmsg_global, fmsg_local)
+            finally:
+                fcntl.lockf(fmsg_global, fcntl.LOCK_UN)
 
     def _cleanup(self):
         """remove temporary files"""
@@ -64,13 +71,19 @@ class Message(object):
             os.remove(self.messages_out)
 
     def _merge_messages(self):
-        """merge newly written lines into global file"""
-        with open(self.messages_out) as fd:
-            content = fd.readlines()
+        """Merge newly written lines into global messages file.
 
-        with open(self.global_messages, 'a') as fd:
-            for line in content:
-                fd.write("%s:%s" % (self.prefix, line))
+        Writing to the global messages file is synchronized using an fcntl lock,
+        because
+        """
+        with open(self.global_messages, 'a') as fmsg_global:
+            try:
+                fcntl.lockf(fmsg_global, fcntl.LOCK_EX)
+                with open(self.messages_out, 'r') as fmsg_local:
+                    for line in fmsg_local:
+                        fmsg_global.write('%s:%s' % (self.prefix, line))
+            finally:
+                fcntl.lockf(fmsg_global, fcntl.LOCK_UN)
 
     def merge_messages(self):
         self._merge_messages()
