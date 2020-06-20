@@ -18,17 +18,19 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# extract the keytype and base64 encoded key ignoring any options and comment
-type_and_key="$(tr ' ' '\n' < "$__object/parameter/key"| awk '/^(ssh|ecdsa)-[^ ]+/ { printf $1" "; getline; printf $1 }')"
-# If type_and_key is empty, which is the case with an invalid key, do not grep $file because it results
-# in greping everything in file and all entries from file are removed.
-if [ -n "${type_and_key}" ]
-then
-    file="$(cat "$__object/parameter/file")"
+file=$(cat "${__object}/parameter/file")
 
+# extract the keytype and base64 encoded key ignoring any options and comment
+type_and_key=$(sed -e 's/#.*$//' "${__object}/parameter/key" | grep -o '\(ssh\|ecdsa\)-[^ ]\{1,\} [A-Za-z0-9+/=]\{1,\}')
+
+# If $type_and_key is empty, which is the case with an invalid key, do not grep
+# $file because it results in grepping everything in file and all entries from
+# file are removed.
+if test -r "${file}" -a -n "${type_and_key}"
+then
     # get any entries that match the type and key
 
     # NOTE: Do not match from the beginning of the line as there may be options
     # preceeding the key.
-    grep "${type_and_key}\\([ \\n].*\\)*$" "$file" || true
+    grep "${type_and_key}"'\([ \n].*\)*$' "${file}" || true
 fi
