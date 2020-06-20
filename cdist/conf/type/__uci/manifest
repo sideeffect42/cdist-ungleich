@@ -26,7 +26,7 @@ transaction_name=$(cat "${__object}/parameter/transaction")
 case $os
 in
 	(openwrt)
-		:  # okay
+		# okay
 		;;
 	(*)
 		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "$os" "${__type##*/}" >&2
@@ -52,5 +52,5 @@ in
 		;;
 esac
 
-# Make sure the changes are being commited.
+# Make sure the changes are being committed.
 require=$__object_name __uci_commit "${transaction_name}"
