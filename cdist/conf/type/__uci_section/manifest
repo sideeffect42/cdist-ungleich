@@ -33,7 +33,6 @@ append_values() {
 	"$@" </dev/null
 }
 
-os=$(cat "${__global}/explorer/os")
 section=$(cat "${__object}/explorer/match")
 
 state_should=$(cat "${__object}/parameter/state")
