@@ -29,7 +29,8 @@ log = logging.getLogger(__name__)
 
 
 class Message(object):
-    """Support messaging between types
+    """This class manages the global messages file and the local object-specific
+    `messages_in` and `messages_out` files.
 
     """
     def __init__(self, prefix, messages):
@@ -54,7 +55,12 @@ class Message(object):
         return env
 
     def _copy_messages(self):
-        """Copy global contents into our copy"""
+        """Copy global contents into our copy.
+
+        Reading from the global messages file is synchronized using a POSIX lock
+        to ensure that the global messages file is not concurrently written to
+        by another object.
+        """
         with open(self.global_messages, 'r+') as fmsg_global:
             try:
                 fcntl.lockf(fmsg_global, fcntl.LOCK_EX)
@@ -64,17 +70,20 @@ class Message(object):
                 fcntl.lockf(fmsg_global, fcntl.LOCK_UN)
 
     def _cleanup(self):
-        """remove temporary files"""
+        """Remove temporary (`messages_in`, `messages_out`) files."""
         if os.path.exists(self.messages_in):
             os.remove(self.messages_in)
         if os.path.exists(self.messages_out):
             os.remove(self.messages_out)
 
     def _merge_messages(self):
-        """Merge newly written lines into global messages file.
+        """Merge message lines newly written by the object into the global
+        messages file.
 
-        Writing to the global messages file is synchronized using an fcntl lock,
-        because
+        Writing to the global messages file needs to be synchronized using a
+        POSIX lock, because multiple processes can merge local messages back
+        into the global messages file at the same time, resulting in gibberish
+        in the global messages file.
         """
         with open(self.global_messages, 'a') as fmsg_global:
             try:
@@ -86,5 +95,8 @@ class Message(object):
                 fcntl.lockf(fmsg_global, fcntl.LOCK_UN)
 
     def merge_messages(self):
+        """Merge messages written by the object into global messages file and
+        delete local `messages_in` and `messages_out` files.
+        """
         self._merge_messages()
         self._cleanup()
