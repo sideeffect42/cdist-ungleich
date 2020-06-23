@@ -71,8 +71,19 @@ else
 		(devuan)
 			impl_type=ifupdown.d
 			;;
+		(centos|redhat)
+			impl_type=redhat
+			;;
+		(openwrt)
+			impl_type=uci
+			;;
 		(*)
-			die "Don't know how to manage interfaces on: ${os}"
+			if test -s "${__object}/explorer/has_networkctl"
+			then
+				impl_type=systemd
+			else
+				die "Don't know how to manage interfaces on: ${os}"
+			fi
 			;;
 	esac
 fi
