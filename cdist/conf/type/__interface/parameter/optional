@@ -1,5 +1,7 @@
-family
-method
+bootproto
+comment
+gateway
 name
+netmask
 state
 type

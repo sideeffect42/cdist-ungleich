@@ -1,4 +1,4 @@
 hotplug
-no-auto
-no-auto-down
-no-scripts
+nodns
+noroute
+onboot
