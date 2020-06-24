@@ -93,4 +93,4 @@ manifest_file="${__type}/files/backends/${impl_type}/manifest"
 test -x "${manifest_file}" || dief 'Unknown type: %s\n' "${impl_type}"
 
 # Run backend-specific script
-"${manifest_file}" "$@"
+exec "${manifest_file}"
