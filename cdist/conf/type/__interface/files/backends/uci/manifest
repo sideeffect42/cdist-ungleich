@@ -19,4 +19,119 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# TODO
+opt_format() {
+	printf "%s='%s'\\n" "${1:?'option name missing'}" "${2:?'option value missing'}"
+}
+
+opt_from_param() {
+	# Only first line will be read.
+	opt_format \
+		"${1:?'option name missing'}" \
+		"$(head -n 1 "${__object}/parameter/${2:?'parameter name missing'}")"
+}
+
+onchange_action=$(cat "${__object}/parameter/onchange")
+state=$(cat "${__object}/parameter/state")
+
+obj_name="network.${__object_id}"
+
+onchange_action() {
+	case $onchange_action
+	in
+		(refresh)
+			printf "ifup '%s'\n" "${__object_id}"
+			;;
+		(up)
+			# shellcheck disable=SC2016
+			echo 'isifup()(up=0; . /usr/share/libubox/jshn.sh && json_load "$(ifstatus "$1")" && json_get_var up up; return $((!up)))'
+			printf "isifup '%s' || ifup '%s'\n" "${__object_id}" "${__object_id}"
+			;;
+		(down)
+			printf "ifdown '%s'\n" "${__object_id}"
+			;;
+		(leave)
+			# ignore
+			;;
+		(*)
+			printf 'Invalid --onchange: %s\n' "${onchange_action}" >&2
+			exit 1
+			;;
+	esac
+}
+
+
+set -- --state "${state}" --transaction "${obj_name}"
+
+if test -s "${__object}/parameter/comment"
+then
+	set -- "$@" --option "$(opt_from_param _comment comment)"
+fi
+
+if test -f "${__object}/parameter/name"
+then
+	set -- "$@" --option "$(opt_from_param ifname name)"
+else
+	set -- "$@" --option "$(opt_format ifname "${__object_id}")"
+fi
+
+set -- "$@" --option "$(opt_format auto "$(
+	! test -f "${__object}/parameter/onboot"; echo $?)")"
+set -- "$@" --option "$(opt_format force_link "$(
+	test -f "${__object}/parameter/hotplug"; echo $?)")"
+
+# Generate appropriate parameters based on bootproto
+bootproto=$(cat "${__object}/parameter/bootproto")
+case $bootproto
+in
+	(dhcp)
+		set -- "$@" --option "$(opt_format proto dhcp)"
+		;;
+	(static)
+		set -- "$@" --option "$(opt_format proto static)"
+
+		if test -s "${__object}/parameter/address"
+		then
+			while read -r _value
+			do
+				set -- "$@" --option "$(opt_format ipaddr "${_value}")"
+			done <"${__object}/parameter/address"
+			unset _value
+		fi
+
+		if test -s "${__object}/parameter/netmask"
+		then
+			set -- "$@" --option "$(opt_from_param netmask netmask)"
+		fi
+
+		if test -s "${__object}/parameter/gateway"
+		then
+			set -- "$@" --option "$(opt_from_param gateway gateway)"
+		fi
+		;;
+	(manual)
+		set -- "$@" --option "$(opt_format proto static)"
+		;;
+	(*)
+		exit 1
+		;;
+esac
+
+if test -s "${__object}/parameter/extra-config"
+then
+	while read -r _opt
+	do
+		set -- "$@" --option "${_opt}"
+	done <"${__object}/parameter/extra-config"
+	unset _opt
+fi
+
+# Instantiate backend type
+__uci_section "${obj_name}" --type network.interface "$@"
+
+if test -s "${__object}/parameter/onchange"
+then
+	require=__uci_commit/"${obj_name}" \
+	__check_messages "interface_${__object_id}_onchange" \
+		--pattern "^__uci_commit/network.${__object_id}:" \
+		--execute "$(onchange_action)"
+fi
