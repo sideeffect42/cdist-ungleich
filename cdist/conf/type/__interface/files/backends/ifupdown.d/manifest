@@ -19,8 +19,21 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-set -- --state "${__object}/parameter/state"
+opt_format() {
+	printf '%s %s\n' "${1:?'option name missing'}" "${2:?'option value missing'}"
+}
 
+opt_from_param() {
+	# Only first line will be read.
+	opt_format \
+		"${1:?'option name missing'}" \
+		"$(head -n 1 "${__object}/parameter/${2:?'parameter name missing'}")"
+}
+
+
+set -- --state "$(cat "${__object}/parameter/state")" --family inet
+
+# Boolean flags
 if test -f "${__object}/parameter/onboot"
 then
 	set -- "$@" --auto
@@ -30,23 +43,63 @@ then
 	set -- "$@" --hotplug
 fi
 
-# Generate appropriate parameters for backend type
+
+if test -f "${__object}/parameter/name"
+then
+	set -- "$@" --name "$(cat "${__object}/parameter/name")"
+fi
+
+
+# Generate appropriate parameters based on bootproto
 bootproto=$(cat "${__object}/parameter/bootproto")
 case $bootproto
 in
 	(dhcp)
-		# TODO
+		set -- "$@" --method dhcp
 		;;
 	(static)
-		# TODO
+		set -- "$@" --method static
+
+		if test -s "${__object}/parameter/address"
+		then
+			while read -r _value
+			do
+				set -- "$@" --option "$(opt_format address "${_value}")"
+			done <"${__object}/parameter/address"
+			unset _value
+		fi
+
+		if test -s "${__object}/parameter/netmask"
+		then
+			set -- "$@" --option "$(opt_from_param netmask netmask)"
+		fi
+
+		if test -s "${__object}/parameter/gateway"
+		then
+			set -- "$@" --option "$(opt_from_param gateway gateway)"
+		fi
 		;;
 	(manual)
-		# TODO
+		set -- "$@" --method manual
 		;;
 	(*)
 		exit 1
 		;;
 esac
 
+if test -s "${__object}/parameter/comment"
+then
+	set -- "$@" --comment "$(cat "${__object}/parameter/comment")"
+fi
+
+if test -s "${__object}/parameter/extra-config"
+then
+	while read -r _opt
+	do
+		set -- "$@" --option "${_opt}"
+	done <"${__object}/parameter/extra-config"
+	unset _opt
+fi
+
 # Instantiate backend type
-__interface_ifupdown.d "@"
+__interface_ifupdown.d "${__object_id}" "$@" <"${__object}/stdin"

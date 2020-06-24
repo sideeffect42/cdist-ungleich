@@ -20,18 +20,18 @@
 #
 
 die() { echo "$*" >&2; exit 1; }
-dief() { die "$(printf "$@")"; }
+dief() {
+	#shellcheck disable=SC2059
+	die "$(printf "$@")"
+}
 invalid_param() { die "$@"; }
 invalid_paramf() { dief "$@"; }
 
 
 os=$(cat "${__global}/explorer/os")
 
-# Parameters
-state=$(cat "${__object}/parameter/state")
-comment=$(cat "${__object}/parameter/comment")
+# Check parameters
 bootproto=$(cat "${__object}/parameter/bootproto")
-
 case $bootproto
 in
 	(dhcp)
