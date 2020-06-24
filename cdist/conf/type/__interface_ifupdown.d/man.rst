@@ -18,69 +18,69 @@ NOTE: Only interfaces declared by cdist are removed when using --state absent.
 REQUIRED PARAMETERS
 -------------------
 family
-   The name of the address family that the interface uses.
-   Available options are: 'inet', 'ipx', 'inet6', 'can'.
+    The name of the address family that the interface uses.
+    Available options are: 'inet', 'ipx', 'inet6', 'can'.
 method
-   The name of the method used to configure the interface.
-   Available options depend on the address family and are, for
-   inet:
+    The name of the method used to configure the interface.
+    Available options depend on the address family and are, for
+    inet:
       'loopback', 'static', 'manual', 'dhcp', 'bootp', 'tunnel', 'ppp',
       'wvdial', and 'ip4ll'.
-   ipx:
+    ipx:
       'static', and 'dynamic'.
-   inet6:
+    inet6:
       'auto', 'loopback', 'static', 'manual', 'dhcp', 'v4tunnel', '6to4'.
-   can:
+    can:
       'static'.
 
 
 OPTIONAL PARAMETERS
 -------------------
 name
-   The name of the logical interface to configure (usually equivalent to the
-   physical interface).
-   Defaults to __object_id.
+    The name of the logical interface to configure (usually equivalent to the
+    physical interface).
+    Defaults to __object_id.
 comment
-   If supplied, the value will be inserted at the top of the configuration file
-   as a comment.
-   If comment is '-', what was written to stdin is used as the comment.
+    If supplied, the value will be inserted at the top of the configuration file
+    as a comment.
+    If comment is '-', what was written to stdin is used as the comment.
 rename
-   If supplied, the given interface renaming spefication will be added to the
-   config file.
-   This option can e.g. be used to generate predictable interface names based on
-   the interface's MAC address.
+    If supplied, the given interface renaming spefication will be added to the
+    config file.
+    This option can e.g. be used to generate predictable interface names based
+    on the interface's MAC address.
 state
-   Either present or absent. Defaults to present.
+    Either present or absent. Defaults to present.
 option
-   Additional option that is added to the generated interface configuration
-   verbatim.
+    Option that is added to the generated interface configuration verbatim.
+    Can be used multiple times so add more than one option.
 onchange
-   The action to perform if the interface configuration has changed.
-   Available options are:
-   leave (default)
-     Do nothing.
-   up
-     Bring the interface up if it is down.
-   down
-     Bring the interface down if it is up.
-   refresh
-     Refresh the interface (down && up).
+    The action to perform if the interface configuration has changed.
+    Available options are:
+    leave (default)
+      Do nothing.
+    up
+      Bring the interface up if it is down.
+    down
+      Bring the interface down if it is up.
+    refresh
+      Refresh the interface (down && up).
 
 
 BOOLEAN PARAMETERS
 ------------------
 auto
-   If supplied, the interface will be marked "auto" and brought up during boot.
+    If supplied, the interface will be marked "auto" and brought up during boot.
 hotplug
-   Allow hotplug support for this interface.
-   The interface will be brought up when udev detects it, this can be during
-   boot or later.
+    Allow hotplug support for this interface.
+    The interface will be brought up when udev detects it, this can be during
+    boot or later.
 no-auto-down
-   If supplied, the interface will not be brought down by the command
-   "ifdown -a".
+    If supplied, the interface will not be brought down by the command
+    "ifdown -a".
 no-scripts
-   If supplied, scripts in '/etc/network/if-*.d/' will not be run when this
-   interface is brought up or down.
+    If supplied, scripts in '/etc/network/if-*.d/' will not be run when this
+    interface is brought up or down.
 
 
 EXAMPLES
