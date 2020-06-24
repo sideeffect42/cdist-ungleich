@@ -92,6 +92,11 @@ then
 	set -- "$@" --comment "$(cat "${__object}/parameter/comment")"
 fi
 
+if test -s "${__object}/parameter/onchange"
+then
+	set -- "$@" --onchange "$(cat "${__object}/parameter/onchange")"
+fi
+
 if test -s "${__object}/parameter/extra-config"
 then
 	while read -r _opt

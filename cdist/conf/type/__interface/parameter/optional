@@ -3,5 +3,6 @@ comment
 gateway
 name
 netmask
+onchange
 state
 type

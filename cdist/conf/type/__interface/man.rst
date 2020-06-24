@@ -57,6 +57,17 @@ extra-config
     Using this option makes the configuration non-portable to other backends.
     If this option is used extensively, it is recommended to use the respective
     backend type directly.
+onchange
+    The action to perform if the interface configuration has changed.
+    Available options are:
+    leave (default)
+      Do nothing.
+    up
+      Bring the interface up if it is down.
+    down
+      Bring the interface down if it is up.
+    refresh
+      Refresh the interface (down && up).
 
 
 BOOLEAN PARAMETERS
