@@ -76,10 +76,6 @@ onboot
    Whether to bring the interface up on boot
 hotplug
    Allow/disallow hotplug support for this interface
-nodns
-   Do not configure nameservers in /etc/resolv.conf.
-noroute
-   Do not set default route.
 
 
 EXAMPLES
