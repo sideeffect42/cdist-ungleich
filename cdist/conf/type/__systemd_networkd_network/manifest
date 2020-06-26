@@ -1,0 +1,121 @@
+#!/bin/sh -e
+#
+# 2020 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+
+CONFIG_FILE_PATH='/etc/systemd/network'
+
+networkctl_bin=$(cat "${__object}/explorer/networkctl_bin")
+
+test -n "${networkctl_bin}" || {
+	printf 'This system is not supported by this type (%s).' "${__type##*/}" >&2
+	printf ' The networkctl tool could not be found.\n' >&2
+	exit 1
+}
+
+{
+	# shellcheck disable=SC2034
+	read -r state_is
+	read -r config_is || true
+} <"${__object}/explorer/state"
+
+if test -f "${__object}/parameter/name"
+then
+	name=$(cat "${__object}/parameter/name")
+else
+	name=$__object_id
+fi
+
+priority=$(cat "${__object}/parameter/priority")
+state_should=$(cat "${__object}/parameter/state")
+
+config_file=$(printf '%s/%02u-%s.network' "${CONFIG_FILE_PATH}" "${priority}" "${__object_id}")
+
+if test -f "${__object:?}/parameter/auto-reload"
+then
+	reload_cmd="${networkctl_bin} reload"
+else
+	reload_cmd=
+fi
+
+gen_conf() {
+	echo '[Match]'
+
+	if test -s "${__object}/parameter/match"
+	then
+		cat "${__object}/parameter/match"
+	else
+		# By default match against the interface name
+		printf 'Name=%s\n' "${name}"
+	fi
+
+	{
+		grep -e '^Network\.' "${__object}/parameter/option"
+
+		grep -v -e '^\(Match\|Network\)\.' "${__object}/parameter/option" \
+		| sort -t . -k 1
+	} | while read -r _option
+	    do
+		    _section=${_option%%.*}
+
+		    if test "${_cur_section}" != "${_section}"
+		    then
+			    # new section
+			    printf '\n[%s]\n' "${_section}"
+			    _cur_section=$_section
+		    fi
+
+		    echo "${_option#*.}"
+	    done
+}
+
+
+if test -n "${config_is}" -a "${config_is}" != "${config_file}"
+then
+	# Check if only the priority has changed!
+	# We cannot in all cases delete the old config file as it might be a default
+	# config.
+	if test "$(dirname "${config_file}")" = "$(dirname "${config_is}")" \
+			&& test "$(basename "${config_is}" | sed -e 's/^[0-9]*//')" \
+			      = "$(basename "${config_file}" | sed -e 's/^[0-9]*//')"
+	then
+		# Remove old config, but do not reload, yet.
+		# reload will be done after new config file has been written…
+		require="__file${config_file}" __file "${config_is}" --state absent
+	fi
+fi
+
+
+case $state_should
+in
+	(present)
+		__directory "${CONFIG_FILE_PATH}" --state pre-exists
+		export require=__directory"${CONFIG_FILE_PATH}"
+
+		gen_conf | __file "${config_file}" --state "${state_should}" \
+			--owner 0 --mode 0644 --source - \
+			--onchange "${reload_cmd}"
+		;;
+	(absent)
+		__file "${config_file}" --state absent \
+			--onchange "${reload_cmd}"
+		;;
+	(*)
+		printf 'Invalid --state: %s\n' "${state_should}"
+		;;
+esac

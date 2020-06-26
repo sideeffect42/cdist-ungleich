@@ -1,0 +1,60 @@
+#!/bin/sh -e
+#
+# 2020 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# Check whether a configuration for the interface already exists with the same
+# name already exists.
+# The output will be "exists" followed by the config file path on the next line,
+# or "absent"
+# In case networkctl cannot be found, the output will be "error".
+#
+
+networkctl_bin=$("${__type_explorer}/networkctl_bin")
+
+test -x "${networkctl_bin}" || { echo error; exit 0; }
+
+if test -f "${__object}/parameter/name"
+then
+	name=$(cat "${__object}/parameter/name")
+else
+	name=$__object_id
+fi
+
+if "${networkctl_bin}" --no-pager --no-legend list "${name}" >/dev/null 2>&1
+then
+	echo exists
+
+	"${networkctl_bin}" --no-pager --no-legend status "${name}" \
+	| awk -F ': ' -v ifname="${name}" '
+	  BEGIN {
+		  # header line
+		  getline
+		  # · N: en...
+		  if (index($2, ifname) != 1 || substr($2, length(ifname) + 1) !~ /^[[:blank:]]*$/)
+			  exit
+	  }
+	  !$0 { exit }  # skip journal lines
+	  /^[[:blank:]]*Network File:/ {
+		  sub(/[[:blank:]]*$/, "", $2)
+		  print $2
+	  }' \
+	| grep -ixvF 'n/a' || true  # networkctl prints "n/a" if iface is unmanaged
+else
+	echo absent
+fi
