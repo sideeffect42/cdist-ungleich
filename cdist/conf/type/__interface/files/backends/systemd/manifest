@@ -19,4 +19,99 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# TODO
+opt_format() {
+	printf '%s=%s\n' "${1:?'option name missing'}" "${2:?'option value missing'}"
+}
+
+opt_from_param() {
+	# Only first line will be read.
+	opt_format \
+		"${1:?'option name missing'}" \
+		"$(head -n 1 "${__object}/parameter/${2:?'parameter name missing'}")"
+}
+
+
+set -- --state "$(cat "${__object}/parameter/state")"
+
+# Boolean flags
+test -f "${__object}/parameter/onboot" || {
+	echo "WARNING: ${__type##*/}: The systemd backend only supports --onboot." >&2
+}
+test -f "${__object}/parameter/hotplug" || {
+	echo "WARNING: ${__type##*/}: The systemd backend only supports --hotplug." >&2
+}
+
+
+if test -f "${__object}/parameter/name"
+then
+	set -- "$@" --name "$(cat "${__object}/parameter/name")"
+fi
+
+
+# Generate appropriate parameters based on bootproto
+bootproto=$(cat "${__object}/parameter/bootproto")
+case $bootproto
+in
+	(dhcp*)
+		if test "${bootproto}" = dhcp
+		then
+			set -- "$@" --option "$(opt_format Network.DHCP yes)"
+		# TODO: Implement IPv6 support
+		# else
+		# 	set -- "$@" --option "$(opt_format Network.DHCP "${bootproto}")"
+		fi
+		;;
+	(static)
+		set -- "$@" --option 'Network.DHCP=false'
+
+		if test -s "${__object}/parameter/address"
+		then
+			while read -r _value
+			do
+				set -- "$@" --option "$(opt_format Network.Address "${_value}")"
+			done <"${__object}/parameter/address"
+			unset _value
+		fi
+
+		if test -s "${__object}/parameter/gateway"
+		then
+			set -- "$@" --option "$(opt_from_param Network.Gateway gateway)"
+		fi
+		;;
+	(manual)
+		set -- "$@" --option 'Network.DHCP=false'
+		;;
+	(*)
+		exit 1
+		;;
+esac
+
+if test -s "${__object}/parameter/comment"
+then
+	set -- "$@" --option "$(opt_from_param Network.Description comment)"
+fi
+
+case $(cat "${__object}/parameter/onchange")
+in
+	(leave)
+		;;
+	(refresh)
+		set -- "$@" --auto-reload
+		;;
+	(*)
+		echo 'The --onchange parameter for type systemd only accepts "leave" or "refresh".' >&2
+		echo 'systemd-networkd automatically reconfigures all interfaces.' >&2
+		exit 1
+esac
+
+if test -s "${__object}/parameter/extra-config"
+then
+	while read -r _opt
+	do
+		set -- "$@" --option "${_opt}"
+	done <"${__object}/parameter/extra-config"
+	unset _opt
+fi
+
+# Instantiate backend type
+__systemd_networkd_network "${__object_id}" "$@"
