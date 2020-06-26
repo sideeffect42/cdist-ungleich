@@ -22,10 +22,8 @@ None.
 OPTIONAL PARAMETERS
 -------------------
 address
-    The IP address to assign to the network interface.
+    The IP address (in CIDR notation) to assign to the network interface.
     Can be repeated to assign multiple IP addresses.
-netmask
-    The netmask.
 bootproto
     The boot protocol to use.
     Acceptable values are ``dhcp``, ``static``, ``manual``.

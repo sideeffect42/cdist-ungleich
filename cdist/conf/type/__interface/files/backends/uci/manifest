@@ -98,11 +98,6 @@ in
 			unset _value
 		fi
 
-		if test -s "${__object}/parameter/netmask"
-		then
-			set -- "$@" --option "$(opt_from_param netmask netmask)"
-		fi
-
 		if test -s "${__object}/parameter/gateway"
 		then
 			set -- "$@" --option "$(opt_from_param gateway gateway)"

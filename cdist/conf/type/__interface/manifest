@@ -40,8 +40,6 @@ in
 			|| invalid_param '--address is invalid for --bootproto dhcp'
 		! test -f "${__object}/parameter/gateway" \
 			|| invalid_param '--gateway is invalid for --bootproto dhcp'
-		! test -f "${__object}/parameter/netmask" \
-			|| invalid_param '--netmask is invalid for --bootproto dhcp'
 		;;
 	(static)
 		# TODO
