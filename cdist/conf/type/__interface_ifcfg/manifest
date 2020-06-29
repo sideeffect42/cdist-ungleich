@@ -26,6 +26,12 @@ opt_format() {
 prefix2subnet() {
 	python3 -c 'for addr in __import__("sys").argv[1:]: print(__import__("ipaddress").ip_network(addr, strict=False).netmask)' "$@"
 }
+param2var() {
+	echo "${1:?'param name missing'}" | tr '[:lower:]' '[:upper:]' | tr '-' '_'
+}
+ipversion() {
+	python3 -c 'for addr in __import__("sys").argv[1:]: print(__import__("ipaddress").ip_address(addr).version)' "$@"
+}
 
 os=$(cat "${__global}/explorer/os")
 
@@ -33,9 +39,11 @@ case $os
 in
 	(centos|redhat|scientific)
 		NETWORK_SCRIPTS_DIR='/etc/sysconfig/network-scripts'
+		systype=redhat
 		;;
 	(suse)
 		NETWORK_SCRIPTS_DIR='/etc/sysconfig/network'
+		systype=suse
 		;;
 	(*)
 		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "${os}" "${__type##*/}" >&2
@@ -97,11 +105,37 @@ onchange_action() {
 	opt_format DEVICE "${name}"
 	opt_format NM_CONTROLLED no
 
+	case $systype
+	in
+		(redhat)
+			for _param in onboot hotplug
+			do
+				_key=$(param2var "${_param}")
+				opt_format "${_key}" "$(test -f "${__object}/parameter/${_param}" | yesno)"
+			done
+			unset _param _key
+			;;
+		(suse)
+			_startmode=manual
+
+			if test -f "${__object}/parameter/onboot"
+			then
+				_startmode=auto
+			fi
+			if test -f "${__object}/parameter/hotplug"
+			then
+				_startmode=ifplugd
+			fi
+
+			opt_format STARTMODE "${_startmode}"
+			;;
+	esac
+
 	ignored_parameters=
 
 	# manually_handled_parameters are handled in their own code block, not by
 	# the generic accumulator
-	manually_handled_parameters='bootproto comment name extra-config state onboot onchange hotplug'
+	manually_handled_parameters='bootproto comment extra-config hotplug name onboot onchange state'
 
 	case $bootproto
 	in
@@ -109,7 +143,7 @@ onchange_action() {
 			opt_format BOOTPROTO dhcp
 			ignored_parameters='address broadcast gateway'
 			;;
-		(static|manual)
+		(static|none)
 			opt_format BOOTPROTO none
 			;;
 		(*)
@@ -122,17 +156,13 @@ onchange_action() {
 
 	for _param in "${__object}"/parameter/*
 	do
-		_key=$(echo "${_param}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+		_key=$(param2var "${_param}")
 
 		echo "${ignored_parameters}" | grep -q -w "${_param}" && continue
 		echo "${manually_handled_parameters}" | grep -q -w "${_param}" && continue
 
 		case $_param
 		in
-			(onboot|hotplug)
-				# boolean options
-				opt_format "${_key}" "$(test -f "${__object}/parameter/${_param}" | yesno)"
-				;;
 			(bond-master)
 				opt_format SLAVE yes
 				opt_format MASTER "$(cat "${__object}/parameter/${_param}")"
@@ -153,12 +183,44 @@ onchange_action() {
 				in
 					(address)
 						n=0
-						while read -r _addr
-						do
-							opt_format "IPADDR${n}" "${_addr%%/*}"
-							opt_format "NETMASK${n}" "$(prefix2subnet "${_addr##*/}")"
-							: $((n+=1))
-						done <"${__object}/parameter/address"
+						case $systype
+						in
+							(redhat)
+								# the fucked-up config
+								while read -r _addr
+								do
+									if test "$(ipversion "${_addr}")" -eq 6
+									then
+										if ! ${_ipv6_enabled:-false}
+										then
+											opt_format IPV6INIT yes
+											opt_format IPV6ADDR "${_addr}"
+											_ipv6_enabled=true
+										else
+											_ipv6_sec="${_ipv6_sec} ${_addr}"
+										fi
+									else
+										opt_format "IPADDR${n}" "${_addr%%/*}"
+										opt_format "NETMASK${n}" "$(prefix2subnet "${_addr##*/}")"
+										: $((n+=1))
+									fi
+								done
+
+								if test -n "${_ipv6_sec}"
+								then
+									opt_format IPV6ADDR_SECONDARIES "${_ipv6_sec# }"
+								fi
+								unset _ipv6_enabled _ipv6_sec
+								;;
+							(suse)
+								# the sane config
+								while read -r _addr
+								do
+									opt_format "IPADDR${n}" "${_addr}"
+									: $((n+=1))
+								done
+								;;
+						esac <"${__object}/parameter/address"
 						unset n _addr
 						;;
 					(*)
