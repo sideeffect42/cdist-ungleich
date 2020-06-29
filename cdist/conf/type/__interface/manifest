@@ -69,8 +69,8 @@ else
 		(devuan)
 			impl_type=ifupdown.d
 			;;
-		(centos|redhat)
-			impl_type=redhat
+		(centos|redhat|scientific|suse)
+			impl_type=ifcfg
 			;;
 		(openwrt)
 			impl_type=uci
