@@ -1,0 +1,184 @@
+#!/bin/sh -e
+#
+# 2014 Steven Armstrong (steven-cdist at armstrong.cc)
+# 2020 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+
+yesno() { test $? -eq 0 && echo yes || echo no; }
+opt_format() {
+	printf '%s="%s"\n' "${1:?'option name missing'}" "${2:?'option value missing'}"
+}
+prefix2subnet() {
+	python3 -c 'for addr in __import__("sys").argv[1:]: print(__import__("ipaddress").ip_network(addr, strict=False).netmask)' "$@"
+}
+
+os=$(cat "${__global}/explorer/os")
+
+case $os
+in
+	(centos|redhat|scientific)
+		NETWORK_SCRIPTS_DIR='/etc/sysconfig/network-scripts'
+		;;
+	(suse)
+		NETWORK_SCRIPTS_DIR='/etc/sysconfig/network'
+		;;
+	(*)
+		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "${os}" "${__type##*/}" >&2
+		printf "Please contribute an implementation for it if you can.\n" >&2
+		exit 1
+		;;
+esac
+
+if test -s "${__object}/parameter/name"
+then
+	name=$(cat "${__object}/parameter/name")
+else
+	name=$__object_id
+fi
+state_should=$(cat "${__object}/parameter/state")
+bootproto=$(cat "${__object}/parameter/bootproto")
+onchange=$(cat "${__object}/parameter/onchange")
+
+ifcfg_file="${NETWORK_SCRIPTS_DIR:?}/ifcfg-${__object_id}"
+
+
+onchange_action() {
+	case $onchange
+	in
+		(refresh)
+			printf "ifdown '%s' || true ; ifup '%s'\n" "${name}" "${name}"
+			;;
+		(up)
+			printf "ifup '%s'\n" "${name}"
+			;;
+		(down)
+			printf "ifdown '%s' || true\n" "${name}"
+			;;
+		(leave)
+			# ignore
+			;;
+		(*)
+			printf 'Invalid --onchange: %s\n' "${onchange}" >&2
+			exit 1
+			;;
+	esac
+}
+
+
+{
+	cat <<-EOF
+	# Created by cdist ${__type##*/}
+	# Do not change. Changes will be overwritten.
+	#
+
+	EOF
+
+	if test -f "$__object/parameter/comment"
+	then
+		awk '{ print "# " $0 }' <"$__object/parameter/comment"
+		echo
+	fi
+
+	opt_format DEVICE "${name}"
+	opt_format NM_CONTROLLED no
+
+	ignored_parameters=
+
+	# manually_handled_parameters are handled in their own code block, not by
+	# the generic accumulator
+	manually_handled_parameters='bootproto comment name extra-config state onboot onchange hotplug'
+
+	case $bootproto
+	in
+		(dhcp)
+			opt_format BOOTPROTO dhcp
+			ignored_parameters='address broadcast gateway'
+			;;
+		(static|manual)
+			opt_format BOOTPROTO none
+			;;
+		(*)
+			printf 'Invalid --bootproto: %s\n' "${bootproto}" >&2
+			exit 1
+			;;
+	esac
+
+	_bonding_opts=
+
+	for _param in "${__object}"/parameter/*
+	do
+		_key=$(echo "${_param}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+
+		echo "${ignored_parameters}" | grep -q -w "${_param}" && continue
+		echo "${manually_handled_parameters}" | grep -q -w "${_param}" && continue
+
+		case $_param
+		in
+			(onboot|hotplug)
+				# boolean options
+				opt_format "${_key}" "$(test -f "${__object}/parameter/${_param}" | yesno)"
+				;;
+			(bond-master)
+				opt_format SLAVE yes
+				opt_format MASTER "$(cat "${__object}/parameter/${_param}")"
+				;;
+			(bond-*)
+				_key=$(echo "${_param#bond-}" | tr '-' '_')
+				_value=$(cat "${__object}/parameter/${_param}")
+
+				if test "${_key}" = 'arp_ip_target'
+				then
+					_value=$(echo "${_value}" | awk -v RS= -v FS='\n' -v OFS=',' '$1=$1')
+				fi
+
+				_bonding_opts="${_bonding_opts} $(opt_format "${_key}" "${_value}")"
+				;;
+			(*)
+				case $_param
+				in
+					(address)
+						n=0
+						while read -r _addr
+						do
+							opt_format "IPADDR${n}" "${_addr%%/*}"
+							opt_format "NETMASK${n}" "$(prefix2subnet "${_addr##*/}")"
+							: $((n+=1))
+						done <"${__object}/parameter/address"
+						unset n _addr
+						;;
+					(*)
+						opt_format "${_key}" "$(cat "${__object}/parameter/${_param}")"
+						;;
+				esac
+				;;
+		esac
+	done
+
+	if test -n "${_bonding_opts}"
+	then
+		# strip leading space
+		opt_format BONDING_OPTS "${_bonding_opts# }"
+	fi
+
+	if test -f "${__object}/parameter/extra-config"
+	then
+		cat "${__object}/parameter/extra-config"
+	fi
+} | __file "${ifcfg_file}" \
+	    --state "${state_should}" --owner root --group root --mode 0644 \
+	    --onchange "$(onchange_action)" --source -
