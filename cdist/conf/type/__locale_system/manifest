@@ -32,8 +32,23 @@ case "$os" in
     archlinux)
         locale_conf="/etc/locale.conf"
         ;;
-    redhat|centos)
-        locale_conf="/etc/sysconfig/i18n"
+    centos|redhat|scientific)
+        version_id=$(. "${__global}/explorer/os_release" && echo "${VERSION_ID:-0}")
+        if expr "${version_id}" '>=' 7 >/dev/null
+        then
+            locale_conf="/etc/locale.conf"
+        else
+            locale_conf="/etc/sysconfig/i18n"
+        fi
+        ;;
+    fedora)
+        version_id=$(. "${__global}/explorer/os_release" && echo "${VERSION_ID:-0}")
+        if expr "${version_id}" '>=' 18 >/dev/null
+        then
+            locale_conf="/etc/locale.conf"
+        else
+            locale_conf="/etc/sysconfig/i18n"
+        fi
         ;;
     *)
         echo "Your operating system ($os) is currently not supported by this type (${__type##*/})." >&2
@@ -47,9 +62,9 @@ __file "$locale_conf" \
        --state exists
 
 require="__file/$locale_conf" \
-       __key_value "$locale_conf:$__object_id" \
+__key_value "$locale_conf:$__object_id" \
        --file "$locale_conf" \
        --key "$__object_id" \
-       --delimiter = \
+       --delimiter '=' --exact_delimiter \
        --state "$(cat "$__object/parameter/state")" \
        --value "$(cat "$__object/parameter/value")"
