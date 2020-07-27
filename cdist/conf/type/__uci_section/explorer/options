@@ -24,5 +24,5 @@ RS=$(printf '\036')
 section=$("${__type_explorer:?}/match")
 test -n "${section}" || exit 0
 
-uci -s -N -d "${RS}" show "${section}" 2>/dev/null \
-| grep -v -e "^${section}=" || true
+# uci(1) returns 1 if the section does not exist
+uci -s -N -d "${RS}" show "${section}" 2>/dev/null || true

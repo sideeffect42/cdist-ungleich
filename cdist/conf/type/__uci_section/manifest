@@ -74,6 +74,10 @@ in
 		type_is=$(cat "${__object:?}/explorer/type")
 		type_should=$(cat "${__object:?}/parameter/type")
 
+		optnames_is=$(
+			sed -n -e 's/=.*$//' \
+			       -e 's/^[^.]*\.[^.]*\.//p' "${__object:?}/explorer/options")
+
 		if test -f "${__object:?}/parameter/option"
 		then
 			optnames_should=$(
@@ -106,33 +110,51 @@ in
 		fi
 
 		# Make sure the section itself is present
-		__uci "${section}" --state present --transaction "${transaction_name}" \
-			--value "${sect_type}"
-		export require=__uci/"${section}"
+		if ! grep -qxF "${section}=${sect_type}" "${__object}/explorer/options"
+		then
+			__uci "${section}" --state present --transaction "${transaction_name}" \
+				--value "${sect_type}"
+			export require=__uci/"${section}"
+		fi
 
 		# Delete options not in "should"
-		sed -e 's/=.*$//;s/^.*\.//' "${__object:?}/explorer/options" \
-		| while read -r optname
+		echo "${optnames_is}" \
+		| while read -r _optname
 		  do
-			  if ! grep_line "${optname}" "${optnames_should}"
+			  if ! grep_line "${_optname}" "${optnames_should}"
 			  then
-				  __uci "${section}.${optname}" --state absent \
+				  __uci "${section}.${_optname}" --state absent \
 					  --transaction "${transaction_name}" </dev/null
 			  fi
 		  done
 
 		# Set "should" options
 		echo "${optnames_should}" \
-		| while read -r optname
+		| grep -e . \
+		| while read -r _optname
 		  do
-			  test -n "${optname}" || continue  # ignore empty lines
+			  values_is=$(
+				  sed -n -e 's/^[^.]*\.[^.]*\.//;T' \
+				         -e "/^${_optname}=/p" \
+				         -e 's/^.*=//' "${__object}/explorer/options" \
+				  | tr '\036' '\n' \
+				  | unquote_lines)
 
-			  grep "^${optname}=" <"${__object:?}/parameter/option" \
-			  | sed -e 's/^.*=//' \
-			  | unquote_lines \
-			  | append_values \
-				    __uci "${section}.${optname}" --state present \
-					    --transaction "${transaction_name}"
+			  values_should=$(
+				  grep -e "^${_optname}=" "${__object:?}/parameter/option" \
+				  | sed -e 's/^.*=//' \
+				  | unquote_lines)
+
+			  # Compare "is" and "should" and only generate __uci object
+			  # if they differ
+			  if test "${values_is}" != "${values_should}"
+			  then
+				  # NOTE: Do not use dash's echo, as it evaluates escape
+				  # sequences.
+				  printf '%s\n' "${values_should}" | append_values \
+					  __uci "${section}.${_optname}" --state present \
+						  --transaction "${transaction_name}"
+			  fi
 		  done
 		;;
 	(absent)
