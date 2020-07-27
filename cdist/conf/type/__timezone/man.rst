@@ -3,7 +3,7 @@ cdist-type__timezone(7)
 
 NAME
 ----
-cdist-type__timezone - Allows one to configure the desired localtime timezone.
+cdist-type__timezone - Configure the system timezone.
 
 
 DESCRIPTION
