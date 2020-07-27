@@ -27,6 +27,7 @@ TZ=$(cat "${__object:?}/parameter/tz")
 os=$(cat "${__global:?}/explorer/os")
 localtime_file=/etc/localtime
 
+# Some OSes require a timezone package to be installed first:
 case ${os}
 in
 	(archlinux|alpine|debian|devuan|ubuntu|centos|redhat|scientific)
@@ -37,8 +38,13 @@ in
 		__package timezone --state present
 		export require=__package/timezone
 		;;
-	(coreos|freebsd|netbsd|openbsd)
-		:  # whitelist
+esac
+
+# Configure the timezone
+case ${os}
+in
+	(alpine|coreos|debian|devuan|ubuntu)
+		echo "${TZ}" | __file /etc/timezone --source -
 		;;
 	(centos|redhat|scientific)
 		__file /etc/sysconfig/clock \
@@ -55,13 +61,6 @@ in
 		echo "Your operating system (${os}) is currently not supported by this type (${__type##*/})." >&2
 		echo "Please contribute an implementation for it if you can." >&2
 		exit 1
-		;;
-esac
-
-case ${os}
-in
-	(ubuntu|debian|devuan|coreos|alpine)
-		echo "${timezone_should}" | __file /etc/timezone --source -
 		;;
 esac
 
