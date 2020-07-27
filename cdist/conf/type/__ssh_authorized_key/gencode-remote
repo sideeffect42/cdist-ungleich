@@ -21,12 +21,12 @@
 set -u
 
 the_key="$(cat "$__object/parameter/key")"
-# validate key
-validated_key="$(echo "${the_key}" | tr ' ' '\n' | awk '/^(ssh|ecdsa)-[^ ]+/ { printf $1" "; getline; printf $1 }')"
-if [ -z "${validated_key}" ]
+
+# validate key (does the format resemble a SSH pubkey?)
+if grep -q '\(ssh\|ecdsa\)-[^ ]\{1,\} [A-Za-z0-9+/=]\{1,\}' "${__object}/parameter/key"
 then
-    echo "Key is invalid: \"${the_key}\"" >&2
-    exit 1
+   printf 'Key is invalid: "%s"\n' "$(cat "${__object}/parameter/key")" >&2
+   exit 1
 fi
 
 remove_line() {
