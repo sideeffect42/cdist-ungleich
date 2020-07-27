@@ -42,11 +42,20 @@ DONE
 }
 
 add_line() {
-   file="$1"
-   line="$2"
-   # escape single quotes
-   line_sanitised=$(echo "$line" | sed -e "s/'/'\"'\"'/g")
-   printf '%s' "printf '%s\\n' '$line_sanitised' >> $file"
+	file="$1"
+	line="$2"
+
+	# escape single quotes
+	line_sanitised=$(echo "$line" | sed -e "s/'/'\"'\"'/g")
+
+	cat <<-EOF
+	test -f '${file}' || {
+	    :>'${file}'
+	    chmod 0600 '${file}'
+	}
+
+	printf '%s\n' '${line_sanitised}' >>'${file}'
+	EOF
 }
 
 
