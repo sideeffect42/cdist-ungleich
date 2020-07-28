@@ -20,7 +20,9 @@ tz
 
 OPTIONAL PARAMETERS
 -------------------
-None.
+tzdir
+    The directory containing the timezone data files on the target.
+    Default: Detected based on OS, usually /usr/share/zoneinfo.
 
 
 EXAMPLES
@@ -33,6 +35,12 @@ EXAMPLES
 
     # Set up US/Central as our timezone.
     __timezone --tz US/Central
+
+    # Some operating systems (e.g. Debian, RedHat, SuSE) have a separate
+    # directory for POSIX timezones (time values interpreted as seconds since
+    # the epoch, not counting leap seconds).
+    # It can be used by manually specifying the TZDIR.
+    __timezone --tz Europe/Vaduz --tzdir /usr/share/zoneinfo/posix
 
 
 AUTHORS
