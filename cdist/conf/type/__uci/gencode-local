@@ -56,7 +56,10 @@ in
 			# "should" is a list
 			printf 'set_list %s\n' "${config}" >>"${__messages_out}"
 
-			uci_cmd "delete '%s'" "${config}"
+			if test "${state_is}" != 'absent'
+			then
+				uci_cmd "delete '%s'" "${config}"
+			fi
 			while read -r value
 			do
 				uci_cmd "add_list '%s'='%s'" "${config}" "${value}"
