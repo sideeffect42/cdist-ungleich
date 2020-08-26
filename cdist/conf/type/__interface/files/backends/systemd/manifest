@@ -27,29 +27,29 @@ opt_from_param() {
 	# Only first line will be read.
 	opt_format \
 		"${1:?'option name missing'}" \
-		"$(head -n 1 "${__object}/parameter/${2:?'parameter name missing'}")"
+		"$(head -n 1 "${__object:?}/parameter/${2:?'parameter name missing'}")"
 }
 
 
-set -- --state "$(cat "${__object}/parameter/state")"
+set -- --state "$(cat "${__object:?}/parameter/state")"
 
 # Boolean flags
-test -f "${__object}/parameter/onboot" || {
+test -f "${__object:?}/parameter/onboot" || {
 	echo "WARNING: ${__type##*/}: The systemd backend only supports --onboot." >&2
 }
-test -f "${__object}/parameter/hotplug" || {
+test -f "${__object:?}/parameter/hotplug" || {
 	echo "WARNING: ${__type##*/}: The systemd backend only supports --hotplug." >&2
 }
 
 
-if test -f "${__object}/parameter/name"
+if test -f "${__object:?}/parameter/name"
 then
-	set -- "$@" --name "$(cat "${__object}/parameter/name")"
+	set -- "$@" --name "$(cat "${__object:?}/parameter/name")"
 fi
 
 
 # Generate appropriate parameters based on bootproto
-bootproto=$(cat "${__object}/parameter/bootproto")
+bootproto=$(cat "${__object:?}/parameter/bootproto")
 case $bootproto
 in
 	(dhcp*)
@@ -64,16 +64,16 @@ in
 	(static)
 		set -- "$@" --option 'Network.DHCP=false'
 
-		if test -s "${__object}/parameter/address"
+		if test -s "${__object:?}/parameter/address"
 		then
 			while read -r _value
 			do
 				set -- "$@" --option "$(opt_format Network.Address "${_value}")"
-			done <"${__object}/parameter/address"
+			done <"${__object:?}/parameter/address"
 			unset _value
 		fi
 
-		if test -s "${__object}/parameter/gateway"
+		if test -s "${__object:?}/parameter/gateway"
 		then
 			set -- "$@" --option "$(opt_from_param Network.Gateway gateway)"
 		fi
@@ -86,12 +86,12 @@ in
 		;;
 esac
 
-if test -s "${__object}/parameter/comment"
+if test -s "${__object:?}/parameter/comment"
 then
 	set -- "$@" --option "$(opt_from_param Network.Description comment)"
 fi
 
-case $(cat "${__object}/parameter/onchange")
+case $(cat "${__object:?}/parameter/onchange")
 in
 	(leave)
 		;;
@@ -104,14 +104,14 @@ in
 		exit 1
 esac
 
-if test -s "${__object}/parameter/extra-config"
+if test -s "${__object:?}/parameter/extra-config"
 then
 	while read -r _opt
 	do
 		set -- "$@" --option "${_opt}"
-	done <"${__object}/parameter/extra-config"
+	done <"${__object:?}/parameter/extra-config"
 	unset _opt
 fi
 
 # Instantiate backend type
-__systemd_networkd_network "${__object_id}" "$@"
+__systemd_networkd_network "${__object_id:?}" "$@"

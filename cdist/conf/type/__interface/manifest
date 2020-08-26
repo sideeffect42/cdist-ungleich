@@ -28,17 +28,17 @@ invalid_param() { die "$@"; }
 invalid_paramf() { dief "$@"; }
 
 
-os=$(cat "${__global}/explorer/os")
+os=$(cat "${__global:?}/explorer/os")
 
 # Check parameters
-bootproto=$(cat "${__object}/parameter/bootproto")
+bootproto=$(cat "${__object:?}/parameter/bootproto")
 case $bootproto
 in
 	(dhcp)
 		# Check parameters
-		! test -f "${__object}/parameter/address" \
+		! test -f "${__object:?}/parameter/address" \
 			|| invalid_param '--address is invalid for --bootproto dhcp'
-		! test -f "${__object}/parameter/gateway" \
+		! test -f "${__object:?}/parameter/gateway" \
 			|| invalid_param '--gateway is invalid for --bootproto dhcp'
 		;;
 	(static)
@@ -52,15 +52,15 @@ in
 		;;
 esac
 
-if test -f "${__object}/parameter/type"
+if test -f "${__object:?}/parameter/type"
 then
-	impl_type=$(cat "${__object}/parameter/type")
+	impl_type=$(cat "${__object:?}/parameter/type")
 else
 	# Guess the type based on the operating system
 	case $os
 	in
 		(debian)
-			os_major=$(grep -o '^[0-9][0-9]*' "${__global}/explorer/os_version")
+			os_major=$(grep -o '^[0-9][0-9]*' "${__global:?}/explorer/os_version")
 			test "${os_major}" -ge 7 \
 				|| die 'Debian versions older than 7 (wheezy) are not supported'
 
@@ -76,18 +76,18 @@ else
 			impl_type=uci
 			;;
 		(*)
-			if test -s "${__object}/explorer/has_networkctl"
+			if test -s "${__object:?}/explorer/has_networkctl"
 			then
 				impl_type=systemd
 			else
-				die "Don't know how to manage interfaces on: ${os}"
+				dief "Don't know how to manage interfaces on: %s\n" "${os}"
 			fi
 			;;
 	esac
 fi
 
 # Hand over to backend-specific implementation
-manifest_file="${__type}/files/backends/${impl_type}/manifest"
+manifest_file="${__type:?}/files/backends/${impl_type}/manifest"
 test -x "${manifest_file}" || dief 'Unknown type: %s\n' "${impl_type}"
 
 # Run backend-specific script

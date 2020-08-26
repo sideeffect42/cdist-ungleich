@@ -27,27 +27,27 @@ opt_from_param() {
 	# Only first line will be read.
 	opt_format \
 		"${1:?'option name missing'}" \
-		"$(head -n 1 "${__object}/parameter/${2:?'parameter name missing'}")"
+		"$(head -n 1 "${__object:?}/parameter/${2:?'parameter name missing'}")"
 }
 
-onchange_action=$(cat "${__object}/parameter/onchange")
-state=$(cat "${__object}/parameter/state")
+onchange_action=$(cat "${__object:?}/parameter/onchange")
+state=$(cat "${__object:?}/parameter/state")
 
-obj_name="network.${__object_id}"
+obj_name="network.${__object_id:?}"
 
 onchange_action() {
 	case $onchange_action
 	in
 		(refresh)
-			printf "ifup '%s'\n" "${__object_id}"
+			printf "ifup '%s'\n" "${__object_id:?}"
 			;;
 		(up)
 			# shellcheck disable=SC2016
 			echo 'isifup()(up=0; . /usr/share/libubox/jshn.sh && json_load "$(ifstatus "$1")" && json_get_var up up; return $((!up)))'
-			printf "isifup '%s' || ifup '%s'\n" "${__object_id}" "${__object_id}"
+			printf "isifup '%s' || ifup '%s'\n" "${__object_id:?}" "${__object_id:?}"
 			;;
 		(down)
-			printf "ifdown '%s'\n" "${__object_id}"
+			printf "ifdown '%s'\n" "${__object_id:?}"
 			;;
 		(leave)
 			# ignore
@@ -62,25 +62,25 @@ onchange_action() {
 
 set -- --state "${state}" --transaction "${obj_name}"
 
-if test -s "${__object}/parameter/comment"
+if test -s "${__object:?}/parameter/comment"
 then
 	set -- "$@" --option "$(opt_from_param _comment comment)"
 fi
 
-if test -f "${__object}/parameter/name"
+if test -f "${__object:?}/parameter/name"
 then
 	set -- "$@" --option "$(opt_from_param ifname name)"
 else
-	set -- "$@" --option "$(opt_format ifname "${__object_id}")"
+	set -- "$@" --option "$(opt_format ifname "${__object_id:?}")"
 fi
 
 set -- "$@" --option "$(opt_format auto "$(
-	! test -f "${__object}/parameter/onboot"; echo $?)")"
+	! test -f "${__object:?}/parameter/onboot"; echo $?)")"
 set -- "$@" --option "$(opt_format force_link "$(
-	test -f "${__object}/parameter/hotplug"; echo $?)")"
+	test -f "${__object:?}/parameter/hotplug"; echo $?)")"
 
 # Generate appropriate parameters based on bootproto
-bootproto=$(cat "${__object}/parameter/bootproto")
+bootproto=$(cat "${__object:?}/parameter/bootproto")
 case $bootproto
 in
 	(dhcp)
@@ -89,16 +89,16 @@ in
 	(static)
 		set -- "$@" --option "$(opt_format proto static)"
 
-		if test -s "${__object}/parameter/address"
+		if test -s "${__object:?}/parameter/address"
 		then
 			while read -r _value
 			do
 				set -- "$@" --option "$(opt_format ipaddr "${_value}")"
-			done <"${__object}/parameter/address"
+			done <"${__object:?}/parameter/address"
 			unset _value
 		fi
 
-		if test -s "${__object}/parameter/gateway"
+		if test -s "${__object:?}/parameter/gateway"
 		then
 			set -- "$@" --option "$(opt_from_param gateway gateway)"
 		fi
@@ -111,22 +111,22 @@ in
 		;;
 esac
 
-if test -s "${__object}/parameter/extra-config"
+if test -s "${__object:?}/parameter/extra-config"
 then
 	while read -r _opt
 	do
 		set -- "$@" --option "${_opt}"
-	done <"${__object}/parameter/extra-config"
+	done <"${__object:?}/parameter/extra-config"
 	unset _opt
 fi
 
 # Instantiate backend type
 __uci_section "${obj_name}" --type network.interface "$@"
 
-if test -s "${__object}/parameter/onchange"
+if test -s "${__object:?}/parameter/onchange"
 then
 	require=__uci_commit/"${obj_name}" \
-	__check_messages "interface_${__object_id}_onchange" \
-		--pattern "^__uci_commit/network.${__object_id}:" \
+	__check_messages "interface_${__object_id:?}_onchange" \
+		--pattern "^__uci_commit/network.${__object_id:?}:" \
 		--execute "$(onchange_action)"
 fi

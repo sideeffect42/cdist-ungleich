@@ -27,31 +27,31 @@ opt_from_param() {
 	# Only first line will be read.
 	opt_format \
 		"${1:?'option name missing'}" \
-		"$(head -n 1 "${__object}/parameter/${2:?'parameter name missing'}")"
+		"$(head -n 1 "${__object:?}/parameter/${2:?'parameter name missing'}")"
 }
 
 
-set -- --state "$(cat "${__object}/parameter/state")" --family inet
+set -- --state "$(cat "${__object:?}/parameter/state")" --family inet
 
 # Boolean flags
-if test -f "${__object}/parameter/onboot"
+if test -f "${__object:?}/parameter/onboot"
 then
 	set -- "$@" --auto
 fi
-if test -f "${__object}/parameter/hotplug"
+if test -f "${__object:?}/parameter/hotplug"
 then
 	set -- "$@" --hotplug
 fi
 
 
-if test -f "${__object}/parameter/name"
+if test -f "${__object:?}/parameter/name"
 then
-	set -- "$@" --name "$(cat "${__object}/parameter/name")"
+	set -- "$@" --name "$(cat "${__object:?}/parameter/name")"
 fi
 
 
 # Generate appropriate parameters based on bootproto
-bootproto=$(cat "${__object}/parameter/bootproto")
+bootproto=$(cat "${__object:?}/parameter/bootproto")
 case $bootproto
 in
 	(dhcp)
@@ -60,16 +60,16 @@ in
 	(static)
 		set -- "$@" --method static
 
-		if test -s "${__object}/parameter/address"
+		if test -s "${__object:?}/parameter/address"
 		then
 			while read -r _value
 			do
 				set -- "$@" --option "$(opt_format address "${_value}")"
-			done <"${__object}/parameter/address"
+			done <"${__object:?}/parameter/address"
 			unset _value
 		fi
 
-		if test -s "${__object}/parameter/gateway"
+		if test -s "${__object:?}/parameter/gateway"
 		then
 			set -- "$@" --option "$(opt_from_param gateway gateway)"
 		fi
@@ -82,22 +82,22 @@ in
 		;;
 esac
 
-if test -s "${__object}/parameter/comment"
+if test -s "${__object:?}/parameter/comment"
 then
-	set -- "$@" --comment "$(cat "${__object}/parameter/comment")"
+	set -- "$@" --comment "$(cat "${__object:?}/parameter/comment")"
 fi
 
-if test -s "${__object}/parameter/onchange"
+if test -s "${__object:?}/parameter/onchange"
 then
-	set -- "$@" --onchange "$(cat "${__object}/parameter/onchange")"
+	set -- "$@" --onchange "$(cat "${__object:?}/parameter/onchange")"
 fi
 
-if test -s "${__object}/parameter/extra-config"
+if test -s "${__object:?}/parameter/extra-config"
 then
 	while read -r _opt
 	do
 		set -- "$@" --option "${_opt}"
-	done <"${__object}/parameter/extra-config"
+	done <"${__object:?}/parameter/extra-config"
 	unset _opt
 fi
 
@@ -106,4 +106,4 @@ if test -s "${__object:?}/stdin"
 then
 	exec <"${__object:?}/stdin"
 fi
-__interface_ifupdown.d "${__object_id}" "$@"
+__interface_ifupdown.d "${__object_id:?}" "$@"
