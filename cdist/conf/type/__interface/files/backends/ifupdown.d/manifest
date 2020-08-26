@@ -102,4 +102,8 @@ then
 fi
 
 # Instantiate backend type
-__interface_ifupdown.d "${__object_id}" "$@" <"${__object}/stdin"
+if test -s "${__object:?}/stdin"
+then
+	exec <"${__object:?}/stdin"
+fi
+__interface_ifupdown.d "${__object_id}" "$@"
