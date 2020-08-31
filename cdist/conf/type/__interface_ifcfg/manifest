@@ -27,13 +27,13 @@ prefix2subnet() {
 	python3 -c 'for addr in __import__("sys").argv[1:]: print(__import__("ipaddress").ip_network(addr, strict=False).netmask)' "$@"
 }
 param2var() {
-	echo "${1:?'param name missing'}" | tr '[:lower:]' '[:upper:]' | tr '-' '_'
+	echo "${1:?'param name missing'}" | tr '[:lower:]-' '[:upper:]_'
 }
 ipversion() {
 	python3 -c 'for addr in __import__("sys").argv[1:]: print(__import__("ipaddress").ip_address(addr).version)' "$@"
 }
 
-os=$(cat "${__global}/explorer/os")
+os=$(cat "${__global:?}/explorer/os")
 
 case $os
 in
@@ -52,17 +52,17 @@ in
 		;;
 esac
 
-if test -s "${__object}/parameter/name"
+if test -s "${__object:?}/parameter/name"
 then
-	name=$(cat "${__object}/parameter/name")
+	name=$(cat "${__object:?}/parameter/name")
 else
-	name=$__object_id
+	name=${__object_id:?}
 fi
-state_should=$(cat "${__object}/parameter/state")
-bootproto=$(cat "${__object}/parameter/bootproto")
-onchange=$(cat "${__object}/parameter/onchange")
+state_should=$(cat "${__object:?}/parameter/state")
+bootproto=$(cat "${__object:?}/parameter/bootproto")
+onchange=$(cat "${__object:?}/parameter/onchange")
 
-ifcfg_file="${NETWORK_SCRIPTS_DIR:?}/ifcfg-${__object_id}"
+ifcfg_file="${NETWORK_SCRIPTS_DIR:?}/ifcfg-${__object_id:?}"
 
 
 onchange_action() {
@@ -96,9 +96,9 @@ onchange_action() {
 
 	EOF
 
-	if test -f "$__object/parameter/comment"
+	if test -f "${__object:?}/parameter/comment"
 	then
-		awk '{ print "# " $0 }' <"$__object/parameter/comment"
+		awk '{ print "# " $0 }' <"${__object:?}/parameter/comment"
 		echo
 	fi
 
@@ -118,11 +118,11 @@ onchange_action() {
 		(suse)
 			_startmode=manual
 
-			if test -f "${__object}/parameter/onboot"
+			if test -f "${__object:?}/parameter/onboot"
 			then
 				_startmode=auto
 			fi
-			if test -f "${__object}/parameter/hotplug"
+			if test -f "${__object:?}/parameter/hotplug"
 			then
 				_startmode=ifplugd
 			fi
@@ -154,7 +154,7 @@ onchange_action() {
 
 	_bonding_opts=
 
-	for _param in "${__object}"/parameter/*
+	for _param in "${__object:?}"/parameter/*
 	do
 		_key=$(param2var "${_param}")
 
@@ -165,11 +165,11 @@ onchange_action() {
 		in
 			(bond-master)
 				opt_format SLAVE yes
-				opt_format MASTER "$(cat "${__object}/parameter/${_param}")"
+				opt_format MASTER "$(cat "${__object:?}/parameter/${_param}")"
 				;;
 			(bond-*)
 				_key=$(echo "${_param#bond-}" | tr '-' '_')
-				_value=$(cat "${__object}/parameter/${_param}")
+				_value=$(cat "${__object:?}/parameter/${_param}")
 
 				if test "${_key}" = 'arp_ip_target'
 				then
@@ -220,11 +220,11 @@ onchange_action() {
 									: $((n+=1))
 								done
 								;;
-						esac <"${__object}/parameter/address"
+						esac <"${__object:?}/parameter/address"
 						unset n _addr
 						;;
 					(*)
-						opt_format "${_key}" "$(cat "${__object}/parameter/${_param}")"
+						opt_format "${_key}" "$(cat "${__object:?}/parameter/${_param}")"
 						;;
 				esac
 				;;
@@ -237,9 +237,9 @@ onchange_action() {
 		opt_format BONDING_OPTS "${_bonding_opts# }"
 	fi
 
-	if test -f "${__object}/parameter/extra-config"
+	if test -f "${__object:?}/parameter/extra-config"
 	then
-		cat "${__object}/parameter/extra-config"
+		cat "${__object:?}/parameter/extra-config"
 	fi
 } | __file "${ifcfg_file}" \
 	    --state "${state_should}" --owner root --group root --mode 0644 \
