@@ -33,6 +33,9 @@ in
 	(devuan)
 		impl_type=ifupdown.d
 		;;
+	(centos|redhat|scientific|suse)
+		impl_type=ifcfg
+		;;
 	(*)
 		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "${os}" "${__type##*/}" >&2
 		printf "Please contribute an implementation for it if you can.\n" >&2

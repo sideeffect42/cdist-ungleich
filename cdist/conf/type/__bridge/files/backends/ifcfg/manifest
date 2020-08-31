@@ -1,0 +1,109 @@
+#!/bin/sh -e
+# -*- mode: sh; indent-tabs-mode: t -*-
+#
+# 2020 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+
+os=$(cat "${__global:?}/explorer/os")
+
+case $os
+in
+	(centos|redhat|scientific)
+		systype=redhat
+		;;
+	(suse)
+		systype=suse
+		set -- "$@" --extra-config BRIDGE=yes
+		;;
+	(*)
+		printf "Your operating system (%s) is currently not supported by %s's ifcfg backend.\n" "${os}" "${__type##*/}" >&2
+		printf "Please contribute an implementation for it if you can.\n" >&2
+		exit 1
+		;;
+esac
+
+
+bridge_stp='off'
+
+cd "${__object:?}/parameter"
+for param in *
+do
+	case $param
+	in
+		(bootproto)
+			bootproto=$(cat "${__object:?}/parameter/bootproto")
+			set -- "$@" --bootproto "${bootproto}"
+			;;
+		(hotplug)
+			echo '--hotplug is not (yet) supported by the ifcfg backend.' >&2
+			exit 1
+			;;
+		(port)
+			case $systype
+			in
+				(redhat)
+					# TOOD
+					;;
+				(suse)
+					bridge_ports=$(
+						while read -r _port
+						do
+							test -z "$(echo "${_port}" | tr -d 'A-Za-z0-9')" || {
+								printf 'Invalid bridge port name: %s\n' "${_port}" >&2
+								exit 1
+							}
+							set -- "$@" "${_port}"
+						done <"${__object:?}/parameter/port"
+						echo "$*"
+					)
+
+					set -- "$@" --extra-config "BRIDGE_PORTS='${bridge_ports}'"
+					unset bridge_ports
+					;;
+			esac
+			;;
+		(stp)
+			bridge_stp='on'
+			;;
+		(onboot)
+			# boolean parameters
+			set -- "$@" --"${param}"
+			;;
+		(*)
+			set -- "$@" --"${param}" "$(cat "${__object:?}/parameter/${param}")"
+			;;
+	esac
+done
+
+
+# Set boolean options
+case $systype
+in
+	(redhat)
+		set -- "$@" --extra-config "STP=${bridge_stp}"
+		test "${bridge_stp}" = 'on' || set -- "$@" --extra-config DELAY=0
+		;;
+	(suse)
+		set -- "$@" --extra-config "BRIDGE_STP=${bridge_stp}"
+		test "${bridge_stp}" = 'on' \
+			|| set -- "$@" --extra-config BRIDGE_FORWARDDELAY=0
+		;;
+esac
+
+# Instantiate backend type
+__interface_ifcfg "${__object_id:?}" --type Bridge "$@"
