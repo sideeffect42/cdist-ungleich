@@ -42,15 +42,17 @@ name
     Defaults to ``__object_id``.
 onchange
     The action to perform if the interface configuration has changed.
+
     Available options are:
+
     leave (default)
-      Do nothing.
+        Do nothing.
     up
-      Bring the interface up if it is down.
+        Bring the interface up if it is down.
     down
-      Bring the interface down if it is up.
+        Bring the interface down if it is up.
     refresh
-      Refresh the interface (down && up).
+        Refresh the interface (down && up).
 state
     ``present`` or ``absent``, defaults to ``present``.
 type
