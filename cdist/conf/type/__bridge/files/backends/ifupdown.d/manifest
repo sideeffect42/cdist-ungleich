@@ -1,0 +1,95 @@
+#!/bin/sh -e
+# -*- mode: sh; indent-tabs-mode: t -*-
+#
+# 2020 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+
+__package_apt bridge-utils
+export require=__package_apt/bridge-utils
+
+bridge_stp='off'
+enable_hotplug=no
+
+cd "${__object:?}/parameter"
+for param in *
+do
+	case $param
+	in
+		(bootproto)
+			bootproto=$(cat "${__object:?}/parameter/bootproto")
+			set -- "$@" --bootproto "${bootproto}"
+
+			case $bootproto
+			in
+				(manual)
+					# if set to manual, there is nothing to wait for…
+					set -- "$@" --extra-config 'bridge_maxwait 0'
+					;;
+			esac
+			;;
+		(hotplug)
+			# N.B.: This option must be equal for all configured bridges,
+			#       or cdist will error.
+			#       This is a limitation of the bridge-utils package.
+			enable_hotplug=yes
+			;;
+		(port)
+			while read -r _port
+			do
+				test -z "$(echo "${_port}" | tr -d 'A-Za-z0-9')" || {
+					printf 'Invalid bridge port name: %s\n' "${_port}" >&2
+					exit 1
+				}
+
+				bridge_ports="${bridge_ports-} ${_port}"
+			done <"${__object:?}/parameter/port"
+			unset _port
+
+			set -- "$@" --extra-config "bridge_ports${bridge_ports}"
+			unset bridge_ports
+			;;
+		(stp)
+			bridge_stp='on'
+			;;
+		(onboot)
+			# boolean parameters
+			set -- "$@" --"${param}"
+			;;
+		(*)
+			set -- "$@" --"${param}" "$(cat "${__object:?}/parameter/${param}")"
+			;;
+	esac
+done
+
+
+# Set boolean options
+set -- "$@" --extra-config "bridge_stp ${bridge_stp}"
+test "${bridge_stp}" = 'on' || set -- "$@" --extra-config 'bridge_fd 0'
+
+__key_value /etc/default/bridge-utils:BRIDGE_HOTPLUG --state present \
+	--file /etc/default/bridge-utils --key BRIDGE_HOTPLUG \
+	--delimiter = --exact_delimiter \
+	--value "${enable_hotplug}"
+
+
+# Instantiate backend type
+if test -s "${__object:?}/stdin"
+then
+	exec <"${__object:?}/stdin"
+fi
+__interface "${__object_id:?}" --type ifupdown.d "$@"

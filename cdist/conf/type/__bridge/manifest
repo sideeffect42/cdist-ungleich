@@ -23,6 +23,16 @@ os=$(cat "${__global:?}/explorer/os")
 
 case $os
 in
+	(debian)
+		os_major=$(grep -o '^[0-9][0-9]*' "${__global:?}/explorer/os_version")
+		test "${os_major}" -ge 7 \
+			|| die 'Debian versions older than 7 (wheezy) are not supported'
+
+		impl_type=ifupdown.d
+		;;
+	(devuan)
+		impl_type=ifupdown.d
+		;;
 	(*)
 		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "${os}" "${__type##*/}" >&2
 		printf "Please contribute an implementation for it if you can.\n" >&2
