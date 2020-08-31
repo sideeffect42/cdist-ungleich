@@ -61,6 +61,7 @@ fi
 state_should=$(cat "${__object:?}/parameter/state")
 bootproto=$(cat "${__object:?}/parameter/bootproto")
 onchange=$(cat "${__object:?}/parameter/onchange")
+iftype=$(cat "${__object:?}/parameter/type")
 
 ifcfg_file="${NETWORK_SCRIPTS_DIR:?}/ifcfg-${__object_id:?}"
 
@@ -108,6 +109,8 @@ onchange_action() {
 	case $systype
 	in
 		(redhat)
+			opt_format TYPE "${iftype}"
+
 			for _param in onboot hotplug
 			do
 				_key=$(param2var "${_param}")
@@ -116,6 +119,14 @@ onchange_action() {
 			unset _param _key
 			;;
 		(suse)
+			iftype=$(echo "${iftype}" | tr '[:upper:]' '[:lower:]')
+			if test "${iftype}" = 'loopback' -o "${iftype}" = 'dummy'
+			then
+				# Only use INTERFACETYPE for lo/dummy.
+				# cf. /usr/share/YaST2/modules/NetworkInterfaces.rb
+				opt_format INTERFACETYPE "${iftype}"
+			fi
+
 			_startmode=manual
 
 			if test -f "${__object:?}/parameter/onboot"

@@ -17,6 +17,10 @@ REQUIRED PARAMETERS
 -------------------
 bootproto
     ...
+type
+    The type of the interface, e.g. ``Ethernet``, ``Bridge``, ``Dummy``,
+    ``Loopback``.
+    Defaults to ``Ethernet``.
 
 
 OPTIONAL PARAMETERS
