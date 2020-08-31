@@ -25,15 +25,15 @@
 # In case networkctl cannot be found, the output will be "error".
 #
 
-networkctl_bin=$("${__type_explorer}/networkctl_bin")
+networkctl_bin=$("${__type_explorer:?}/networkctl_bin")
 
 test -x "${networkctl_bin}" || { echo error; exit 0; }
 
-if test -f "${__object}/parameter/name"
+if test -f "${__object:?}/parameter/name"
 then
-	name=$(cat "${__object}/parameter/name")
+	name=$(cat "${__object:?}/parameter/name")
 else
-	name=$__object_id
+	name=${__object_id:?}
 fi
 
 if "${networkctl_bin}" --no-pager --no-legend list "${name}" >/dev/null 2>&1
