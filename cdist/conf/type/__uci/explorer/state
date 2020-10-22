@@ -33,16 +33,16 @@
 
 RS=$(printf '\036')
 
-option=$__object_id
+option=${__object_id:?}
 
 values_is=$(uci -s -N -d "${RS}" get "${option}" 2>/dev/null) || {
 	echo absent
 	exit 0
 }
 
-if test -f "${__object}/parameter/value"
+if test -f "${__object:?}/parameter/value"
 then
-	should_file="${__object}/parameter/value"
+	should_file="${__object:?}/parameter/value"
 else
 	should_file='/dev/null'
 fi

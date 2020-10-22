@@ -21,7 +21,7 @@
 
 RS=$(printf '\036')
 
-section=$("${__type_explorer}/match")
+section=$("${__type_explorer:?}/match")
 test -n "${section}" || exit 0
 
 uci -s -N -d "${RS}" show "${section}" 2>/dev/null \

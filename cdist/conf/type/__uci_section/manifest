@@ -33,25 +33,25 @@ append_values() {
 	"$@" </dev/null
 }
 
-section=$(cat "${__object}/explorer/match")
+section=$(cat "${__object:?}/explorer/match")
 
-state_should=$(cat "${__object}/parameter/state")
-transaction_name=$(cat "${__object}/parameter/transaction")
+state_should=$(cat "${__object:?}/parameter/state")
+transaction_name=$(cat "${__object:?}/parameter/transaction")
 
 case $state_should
 in
 	(present)
-		test -s "${__object}/parameter/type" || {
+		sect_type=$(cat "${__object:?}/explorer/type")
+		test -s "${__object:?}/parameter/type" || {
 			echo 'Parameter --type is required if --state is present.' >&2
 			exit 1
 		}
-		sect_type=$(cat "${__object}/explorer/type")
-		sect_type_filter=$(cat "${__object}/parameter/type")
+		sect_type_filter=$(cat "${__object:?}/parameter/type")
 
-		if test -f "${__object}/parameter/option"
+		if test -f "${__object:?}/parameter/option"
 		then
 			optnames_should=$(
-				sed -e 's/=.*$//' "${__object}/parameter/option" | sort -u)
+				sed -e 's/=.*$//' "${__object:?}/parameter/option" | sort -u)
 		fi
 
 		if test -n "${sect_type}"
@@ -71,13 +71,13 @@ in
 		then
 			# No section exists and --match was used.
 			# So we generate a new section identifier from $__object_id.
-			case $__object_id
+			case ${__object_id:?}
 			in
 				(*.*)
-					section=$__object_id
+					section=${__object_id:?}
 					;;
 				(*)
-					section="${sect_type_filter%%.*}.${__object_id}"
+					section="${sect_type_filter%%.*}.${__object_id:?}"
 					;;
 			esac
 		fi
@@ -88,7 +88,7 @@ in
 		export require=__uci/"${section}"
 
 		# Delete options not in "should"
-		sed -e 's/=.*$//;s/^.*\.//' "${__object}/explorer/options" \
+		sed -e 's/=.*$//;s/^.*\.//' "${__object:?}/explorer/options" \
 		| while read -r optname
 		  do
 			  if ! grep_line "${optname}" "${optnames_should}"
@@ -104,7 +104,7 @@ in
 		  do
 			  test -n "${optname}" || continue  # ignore empty lines
 
-			  grep "^${optname}=" <"${__object}/parameter/option" \
+			  grep "^${optname}=" <"${__object:?}/parameter/option" \
 			  | sed -e 's/^.*=//' \
 			  | unquote_lines \
 			  | append_values \

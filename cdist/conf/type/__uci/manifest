@@ -18,10 +18,10 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-os=$(cat "$__global/explorer/os")
+os=$(cat "${__global:?}/explorer/os")
 
-state_should=$(cat "${__object}/parameter/state")
-transaction_name=$(cat "${__object}/parameter/transaction")
+state_should=$(cat "${__object:?}/parameter/state")
+transaction_name=$(cat "${__object:?}/parameter/transaction")
 
 case $os
 in
@@ -29,7 +29,7 @@ in
 		# okay
 		;;
 	(*)
-		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "$os" "${__type##*/}" >&2
+		printf "Your operating system (%s) is currently not supported by this type (%s)\n" "${os}" "${__type##*/}" >&2
 		printf "Please contribute an implementation for it if you can.\n" >&2
 		exit 1
 		;;
@@ -38,7 +38,7 @@ esac
 case $state_should
 in
 	(present)
-		test -s "${__object}/parameter/value" || {
+		test -s "${__object:?}/parameter/value" || {
 			echo 'The parameter --value is required.' >&2
 			exit 1
 		}
@@ -53,4 +53,4 @@ in
 esac
 
 # Make sure the changes are being committed.
-require=$__object_name __uci_commit "${transaction_name}"
+require=${__object_name:?} __uci_commit "${transaction_name}"

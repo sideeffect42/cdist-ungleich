@@ -18,21 +18,23 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-config=$__object_id
+config=${__object_id:?}
 
-state_is=$(cat "${__object}/explorer/state")
-state_should=$(cat "${__object}/parameter/state")
+state_is=$(cat "${__object:?}/explorer/state")
+state_should=$(cat "${__object:?}/parameter/state")
 
-transaction_name=$(cat "${__object}/parameter/transaction")
+transaction_name=$(cat "${__object:?}/parameter/transaction")
 
-tmpdir="${__global}/tmp/__uci"
+tmpdir="${__global:?}/tmp/__uci"
 # HACK
 mkdir -p "${tmpdir}"
 
 tmpfile="${tmpdir}/${transaction_name}.txt"
 
 
-in_list() { printf '%s\n' "$@" | { grep -qxF "$(read -r NDL; echo "$NDL")"; } }
+in_list() {
+	printf '%s\n' "$@" | { grep -qxF "$(read -r ndl; echo "${ndl}")"; }
+}
 
 uci_cmd() {
 	printf 'printf "%s\n"' "$1"
@@ -51,10 +53,10 @@ in
 			exit 0
 		fi
 
-		if test "$(wc -l <"${__object}/parameter/value")" -gt 1
+		if test "$(wc -l <"${__object:?}/parameter/value")" -gt 1
 		then
 			# "should" is a list
-			printf 'set_list %s\n' "${config}" >>"${__messages_out}"
+			printf 'set_list %s\n' "${config}" >>"${__messages_out:?}"
 
 			if test "${state_is}" != 'absent'
 			then
@@ -63,12 +65,12 @@ in
 			while read -r value
 			do
 				uci_cmd "add_list '%s'='%s'" "${config}" "${value}"
-			done <"${__object}/parameter/value"
+			done <"${__object:?}/parameter/value"
 		else
 			# "should" is a scalar
-			printf 'set %s\n' "${config}" >>"${__messages_out}"
+			printf 'set %s\n' "${config}" >>"${__messages_out:?}"
 
-			value=$(cat "${__object}/parameter/value")
+			value=$(cat "${__object:?}/parameter/value")
 			uci_cmd "set '%s'='%s'" "${config}" "${value}"
 		fi
 		;;
@@ -78,7 +80,7 @@ in
 			exit 0
 		fi
 
-		printf 'delete %s\n' "${config}" >>"${__messages_out}"
+		printf 'delete %s\n' "${config}" >>"${__messages_out:?}"
 		uci_cmd "delete '%s'" "${config}"
 		;;
 	(*)
