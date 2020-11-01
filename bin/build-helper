@@ -70,7 +70,7 @@ fi
 
 option=$1; shift
 
-SHELLCHECKCMD="shellcheck -s sh -f gcc -x"
+SHELLCHECKCMD="shellcheck -s sh -f gcc -x -P SCRIPTDIR"
 # Skip SC2154 for variables starting with __ since such variables are cdist
 # environment variables.
 SHELLCHECK_SKIP=': __.*is referenced but not assigned.*\[SC2154\]'
