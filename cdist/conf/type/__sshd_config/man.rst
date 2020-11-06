@@ -3,7 +3,7 @@ cdist-type__sshd_config(7)
 
 NAME
 ----
-cdist-type__sshd_config - TODO
+cdist-type__sshd_config - Manage options in sshd_config
 
 
 DESCRIPTION
@@ -19,16 +19,28 @@ None.
 OPTIONAL PARAMETERS
 -------------------
 file
-    ....
+    The path to the sshd_config file to edit.
+    Defaults to ``/etc/ssh/sshd_config``.
 match
-    Can be used multiple times.
-    All of the attributes on a single Match line are ANDed together
+    Restrict this option to apply only for certain connections.
+    Allowed values are what would be allowed to be written after a ``Match``
+    keyword in ``sshd_config``, e.g. ``--match 'User anoncvs'``.
+
+    Can be used multiple times. All of the values are ANDed together.
 option
-    ....
+    The name of the option to manipulate. Defaults to ``__object_id``.
 state
-    ....
+    Can be:
+
+    - ``present``: ensure a matching config line is present (or the default
+      value).
+    - ``absent``: ensure no matching config line is present.
 value
-    ....
+    The option's value to be assigned to the option (if ``--state present``) or
+    removed (if ``--state absent``).
+
+    This option is required if ``--state present``. If not specified and
+    ``--state absent``, all values for the given option are removed.
 
 
 BOOLEAN PARAMETERS
@@ -41,20 +53,32 @@ EXAMPLES
 
 .. code-block:: sh
 
-    # TODO
-    __sshd_config
+    # Disallow root logins with password
+    __sshd_config PermitRootLogin --value without-password
+
+    # Disallow password-based authentication
+    __sshd_config PasswordAuthentication --value no
+
+    # Accept the EDITOR environment variable
+    __sshd_config AcceptEnv:EDITOR --option AcceptEnv --value EDITOR
+
+    # Force command for connections as git user
+    __sshd_config git@ForceCommand --match 'User git' --option ForceCommand \
+        --value 'cd ~git && exec git-shell ${SSH_ORIGINAL_COMMAND:+-c "${SSH_ORIGINAL_COMMAND}"}'
 
 
 SEE ALSO
 --------
-:strong:`TODO`\ (7)
+:strong:`sshd_config`\ (5)
 
 
 BUGS
 ----
-- This type assumes a nicely formatted config file, i.e. only one config option per line (and no config options spanning multiple lines)
+- This type assumes a nicely formatted config file,
+  i.e. no config options spanning multiple lines.
 - ``Include`` directives are ignored.
-
+- Config options are not added/removed to/from the config file if their value is
+  the default value.
 
 
 AUTHORS
