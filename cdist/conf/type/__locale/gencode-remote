@@ -103,6 +103,33 @@ in
 				;;
 		esac
 		;;
+	(freebsd)
+		case ${state_should}
+		in
+			(present)
+				if expr "$(grep -oe '^[0-9]*' "${__global:?}/explorer/os_version")" '>=' 11 >/dev/null
+				then
+					# use localedef
+					printf "localedef -i '%s' -f '%s' '%s'\n" "${input}" "${codeset}" "${locale}"
+				else
+					# use mklocale
+					:
+				fi
+				;;
+			(absent)
+				:
+				;;
+		esac
+		;;
+	(macosx)
+		:  # TODO https://de.wikipedia.org/wiki/Locale#Mac_OS_X
+		;;
+	(netbsd|openbsd)
+		# NetBSD/OpenBSD are missing localedef(1).
+		# We also do not delete defined locales because they can't be recreated.
+		echo "${os} is lacking localedef(1). Locale management unavailable." >&2
+		exit 1
+		;;
 	(*)
 		echo "Your operating system (${os}) is currently not supported by this type (${__type##*/})." >&2
 		echo "Please contribute an implementation for it if you can." >&2
