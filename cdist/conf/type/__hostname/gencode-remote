@@ -59,7 +59,7 @@ echo 'changed' >>"${__messages_out:?}"
 # Use the good old way to set the hostname.
 case ${os}
 in
-    (alpine|debian|devuan|ubuntu)
+    (alpine|dsm|debian|devuan|ubuntu)
         echo 'hostname -F /etc/hostname'
         ;;
     (archlinux)
