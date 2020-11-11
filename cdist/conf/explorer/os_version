@@ -61,6 +61,16 @@ case "$("$__explorer/os")" in
    devuan)
       cat /etc/devuan_version
    ;;
+   dsm)
+      # e.g. 6.2.3-25426 Update 3
+      (
+         . /etc/VERSION &&
+         printf '%s%s%s\n' \
+            "${productversion}" \
+            "${buildnumber:+-}${buildnumber-}" \
+            "${smallfixnumber:+ Update }${smallfixnumber}"
+      )
+   ;;
    fedora)
       cat /etc/fedora-release
    ;;

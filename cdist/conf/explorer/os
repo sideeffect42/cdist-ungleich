@@ -116,6 +116,11 @@ if [ -f /etc/slackware-version ]; then
    exit 0
 fi
 
+if test -f /etc/synoinfo.conf -a -f /etc/VERSION; then
+   echo dsm  # Synology DiskStation Manager
+   exit 0
+fi
+
 uname_s="$(uname -s)"
 
 # Assume there is no tr on the client -> do lower case ourselves
