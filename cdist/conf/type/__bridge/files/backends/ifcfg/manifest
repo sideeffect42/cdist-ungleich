@@ -37,13 +37,13 @@ in
 		;;
 esac
 
-
+bridge_ports=  # space-separated list
 bridge_stp='off'
 
 cd "${__object:?}/parameter"
 for param in *
 do
-	case $param
+	case ${param}
 	in
 		(bootproto)
 			bootproto=$(cat "${__object:?}/parameter/bootproto")
@@ -54,7 +54,7 @@ do
 			exit 1
 			;;
 		(port)
-			case $systype
+			case ${systype}
 			in
 				(redhat)
 					# TOOD
@@ -67,13 +67,10 @@ do
 								printf 'Invalid bridge port name: %s\n' "${_port}" >&2
 								exit 1
 							}
-							set -- "$@" "${_port}"
+							printf ' %s' "${_port}"
 						done <"${__object:?}/parameter/port"
-						echo "$*"
 					)
-
-					set -- "$@" --extra-config "BRIDGE_PORTS='${bridge_ports}'"
-					unset bridge_ports
+					bridge_ports=${bridge_ports# }
 					;;
 			esac
 			;;
@@ -90,6 +87,8 @@ do
 	esac
 done
 
+# Set bridge ports
+set -- "$@" --extra-config "BRIDGE_PORTS='${bridge_ports}'"
 
 # Set boolean options
 case $systype

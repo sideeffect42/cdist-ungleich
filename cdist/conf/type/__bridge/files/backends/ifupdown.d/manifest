@@ -22,19 +22,20 @@
 __package_apt bridge-utils
 export require=__package_apt/bridge-utils
 
+bridge_ports='none'  # space-separated list
 bridge_stp='off'
 enable_hotplug=no
 
 cd "${__object:?}/parameter"
 for param in *
 do
-	case $param
+	case ${param}
 	in
 		(bootproto)
 			bootproto=$(cat "${__object:?}/parameter/bootproto")
 			set -- "$@" --bootproto "${bootproto}"
 
-			case $bootproto
+			case ${bootproto}
 			in
 				(manual)
 					# if set to manual, there is nothing to wait for…
@@ -49,19 +50,18 @@ do
 			enable_hotplug=yes
 			;;
 		(port)
-			while read -r _port
-			do
-				test -z "$(echo "${_port}" | tr -d 'A-Za-z0-9')" || {
-					printf 'Invalid bridge port name: %s\n' "${_port}" >&2
-					exit 1
-				}
+			bridge_ports=$(
+				while read -r _port
+				do
+					test -z "$(echo "${_port}" | tr -d 'A-Za-z0-9')" || {
+						printf 'Invalid bridge port name: %s\n' "${_port}" >&2
+						exit 1
+					}
 
-				bridge_ports="${bridge_ports-} ${_port}"
-			done <"${__object:?}/parameter/port"
-			unset _port
-
-			set -- "$@" --extra-config "bridge_ports${bridge_ports}"
-			unset bridge_ports
+					printf ' %s' "${_port}"
+				done <"${__object:?}/parameter/port"
+			)
+			bridge_ports=${bridge_ports# }
 			;;
 		(stp)
 			bridge_stp='on'
@@ -76,6 +76,9 @@ do
 	esac
 done
 
+
+# Set bridge ports
+set -- "$@" --extra-config "bridge_ports ${bridge_ports}"
 
 # Set boolean options
 set -- "$@" --extra-config "bridge_stp ${bridge_stp}"
