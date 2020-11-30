@@ -44,7 +44,7 @@ extra-config
 gateway
     The default gateway to assign to this interface (optional).
 name
-    The name of the physical or logical network device to configure.
+    The name of the logical network device to configure.
     Defaults to ``__object_id``.
 onchange
     The action to perform if the interface configuration has changed.
