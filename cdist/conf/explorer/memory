@@ -46,7 +46,10 @@ in
 	(Darwin)
 		sysctl -n hw.memsize | bytes2kib
 		;;
-	(FreeBSD|NetBSD|OpenBSD)
+	(FreeBSD)
+		sysctl -n hw.realmem | bytes2kib
+		;;
+	(NetBSD|OpenBSD)
 		command -p sysctl -n hw.physmem | bytes2kib
 		;;
 	(SunOS)
