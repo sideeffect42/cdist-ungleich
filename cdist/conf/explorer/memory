@@ -50,6 +50,7 @@ in
 		sysctl -n hw.realmem | bytes2kib
 		;;
 	(NetBSD|OpenBSD)
+		# NOTE: This reports "usable" memory, not physically installed memory.
 		command -p sysctl -n hw.physmem | bytes2kib
 		;;
 	(SunOS)
@@ -76,6 +77,7 @@ in
 		then
 			# Fall back to meminfo file on other architectures (e.g. ARM, MIPS,
 			# PowerPC)
+			# NOTE: This is "usable" memory, not physically installed memory.
 			awk -F ': +' '$1 == "MemTotal" { sub(/B$/, "iB", $2); print $2 }' /proc/meminfo \
 			| str2bytes \
 			| bytes2kib
