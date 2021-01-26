@@ -85,4 +85,9 @@ in
 			| bytes2kib
 		fi
 		;;
+	(*)
+		printf "Your kernel (%s) is currently not supported by the memory explorer\n" "$(uname -s)" >&2
+		printf "Please contribute an implementation for it if you can.\n" >&2
+		exit 1
+		;;
 esac
