@@ -20,7 +20,9 @@
 # You should have received a copy of the GNU General Public License
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
-# Returns the amount of memory available to the system in kibibytes (kiB).
+# Returns the amount of memory physically installed in the system, or if that
+# cannot be determined the amount available to the operating system kernel,
+# in kibibytes (kiB).
 
 str2bytes() {
 	awk -F' ' '
