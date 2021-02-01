@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-# 2020 Dennis Camera (dennis.camera@ssrq-sds-fds.ch)
+# 2020-2021 Dennis Camera (dennis.camera@ssrq-sds-fds.ch)
 #
 # This file is part of cdist.
 #
@@ -98,6 +98,7 @@ in
 			# The /etc/network/interfaces file is overwritten with a basic example.
 			__file "${INTERFACES_FILE}" --state present --owner root --mode 0644 \
 				--source "${__type}/files/interfaces"
+			export require="__file${INTERFACES_FILE}"
 		else
 			# If state is present and IFUPDOWND_LEAVE_EXISTING_CONFIG is set,
 			# ensure that the interfaces.d directory is sourced in the main
@@ -106,6 +107,7 @@ in
 				--file "${INTERFACES_FILE}" \
 				--before '^#?[:blank:]*(auto|no-auto-down|no-scripts|allow-|iface|mapping|rename|source|source-directory)|^#[[:blank:]]*The .* interface$' \
 				--line "source ${INTERFACES_D_PATH}/*"
+			export require="__line${INTERFACES_FILE}:source_interfaces.d"
 		fi
 
 		__directory "${INTERFACES_D_PATH}" --state pre-exists \
