@@ -240,7 +240,12 @@ check_upstart() {
 	case $(initctl version)
 	in
 		*'(upstart '*')')
-			if test -d /etc/init
+			if test -x /usr/syno/sbin/synoservice \
+				-a -x /usr/syno/sbin/synoservicectl
+			then
+				# upstart-based Synology init system
+				echo upstart-syno
+			elif test -d /etc/init
 			then
 				# modern (DBus-based?) upstart >= 0.5
 				echo upstart
