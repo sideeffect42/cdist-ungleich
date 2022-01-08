@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-# 2020 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+# 2020, 2022 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
 #
 # This file is part of cdist.
 #
@@ -28,9 +28,39 @@ joinlines() { sed -n -e H -e "\${x;s/^\\n//;s/\\n/${1:?}/g;p;}"; }
 trlower() { tr '[:upper:]' '[:lower:]'; }
 tolower() { printf '%s' "$*" | trlower; }
 
+conf_get_value() (
+	conf_file=${1:?}
+	lname=$(tolower "${2:?}")
+
+	set -- -T -f "${conf_file}"
+	if conn_spec=$(make_conn_spec)
+	then
+		set -- "$@" -C "${conn_spec}"
+	fi
+
+	sshd "$@" | sed -n -e 's#^'"${lname}"'[[:blank:]]\{1,\}##p'
+)
+
 default_value() {
-	sshd -T -f /dev/null -C "$(make_conn_spec)" \
-	| sed -n -e 's/^'"$(tolower "${1:?}")"'[[:blank:]]\{1,\}//p'
+	conf_get_value /dev/null "$1"
+}
+is_value() {
+	conf_get_value "${sshd_config_file}" "$1"
+}
+
+version_ge() (
+	# This function only compares the numeric parts of the version number!
+	v1=${1%%[!0-9.]*}
+	v2=${2%%[!0-9.]*}
+	sort -t . -n <<-EOF | head -n1 | grep -qxF "${v2}"
+	${v1}
+	${v2}
+	EOF
+)
+
+openssh_version=$("${__type_explorer:?}/openssh-version")
+is_sshd_version_ge() {
+	version_ge "${openssh_version}" "$1"
 }
 
 make_conn_spec() {
@@ -41,13 +71,29 @@ make_conn_spec() {
 		_match_file='/dev/null'
 	fi
 
-	for _kw in \
+	# Match blocks in sshd_config(5) have been added in OpenSSH 4.3
+	is_sshd_version_ge 4.3 || return 1
+
+	set -- \
 		addr=Address \
 		user=User \
-		host=Host \
-		laddr=LocalAddress \
-		lport=LocalPort \
-		rdomain=RDomain
+		host=Host
+
+	if is_sshd_version_ge 6.0
+	then
+		set -- "$@" \
+			laddr=LocalAddress \
+			lport=LocalPort
+	fi
+
+	if is_sshd_version_ge 7.6
+	then
+		# RDomain has been added in OpenSSH 7.6
+		set -- "$@" \
+			rdomain=RDomain
+	fi
+
+	for _kw
 	do
 		_specname=${_kw%%=*}
 		_confname=$(tolower "${_kw#*=}")
@@ -93,19 +139,17 @@ test -e "${sshd_config_file}" || {
 	exit 0
 }
 
-value_is=$(
-	sshd -T -f "${sshd_config_file}" -C "$(make_conn_spec)" \
-	| sed -n -e 's/^'"$(tolower "${option_name}")"'[[:blank:]]\{1,\}//p')
+value_is=$(is_value "${option_name}")
 
-if printf '%s\n' "${value_is}" | {
-		if test -n "${value_should}"
-		then
-			grep -q -x -F "${value_should}"
-		else
-			# if no value provided, assume "any" value
-			grep -q -e .
-		fi
-	}
+if test -n "${value_should}"
+then
+	test "${value_is}" = "${value_should}"
+else
+	# if no --value provided, assume "any" value is fine
+	test -n "${value_is}"
+fi && is_match=true || is_match=false
+
+if ${is_match}
 then
 	if default_value "${option_name}" | grep -q -x -F "${value_is}"
 	then

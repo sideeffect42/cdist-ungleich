@@ -1,0 +1,31 @@
+#!/bin/sh -e
+#
+# 2022 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+# Prints the version of the currently installed OpenSSH server.
+#
+
+command -v sshd >/dev/null 2>&1 || {
+	echo 'sshd: command not found' >&2
+	exit 1
+}
+
+# NOTE: -V is an invalid option but it allows execution of sshd without using
+#       an absolute path, and it will not start an actual SSH daemon.
+# Extract the version information from the usage message
+sshd -V 2>&1 | sed -n -e 's/^OpenSSH_\([^, ]*\).*$/\1/p'
